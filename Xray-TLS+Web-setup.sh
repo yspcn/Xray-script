@@ -26,7 +26,7 @@ nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 
-php_version="php-8.0.5"
+php_version="php-7.4.18"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
@@ -1663,6 +1663,33 @@ instal_php_imagick()
     cd ..
     rm -rf imagick
 }
+instal_php_apcu()
+{
+    if ! wget http://pecl.php.net/get/apcu-5.1.20.tgz; then
+        yellow "获取php-apcu源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf apcu-5.1.20.tgz
+    cd apcu-5.1.20
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-apcu编译失败"
+        green  "欢迎进行Bug report(https://github.com/kirin10000/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -rf apcu-5.1.20
+}
 install_php_part1()
 {
     green "正在安装php。。。。"
@@ -1691,6 +1718,7 @@ upload_max_filesize=-1
 extension=imagick.so
 zend_extension=opcache.so
 opcache.enable=1
+extension=apcu.so
 EOF
     install -m 644 "${php_prefix}/php-fpm.service.default" $php_service
 cat >> $php_service <<EOF
@@ -2808,12 +2836,12 @@ install_update_xray_tls_web()
 #功能型函数
 check_script_update()
 {
-    [ "$(md5sum "${BASH_SOURCE[0]}" | awk '{print $1}')" == "$(md5sum <(wget -O - "https://github.com/kirin10000/Xray-script/raw/main/Xray-TLS+Web-setup.sh") | awk '{print $1}')" ] && return 1 || return 0
+    [ "$(md5sum "${BASH_SOURCE[0]}" | awk '{print $1}')" == "$(md5sum <(wget -O - "https://github.com/eysp/Xray-script/raw/main/Xray-TLS+Web-setup.sh") | awk '{print $1}')" ] && return 1 || return 0
 }
 update_script()
 {
     rm -rf "${BASH_SOURCE[0]}"
-    if ! wget -O "${BASH_SOURCE[0]}" "https://github.com/kirin10000/Xray-script/raw/main/Xray-TLS+Web-setup.sh" && ! wget -O "${BASH_SOURCE[0]}" "https://github.com/kirin10000/Xray-script/raw/main/Xray-TLS+Web-setup.sh"; then
+    if ! wget -O "${BASH_SOURCE[0]}" "https://github.com/eysp/Xray-script/raw/main/Xray-TLS+Web-setup.sh" && ! wget -O "${BASH_SOURCE[0]}" "https://github.com/eysp/Xray-script/raw/main/Xray-TLS+Web-setup.sh"; then
         red "更新脚本失败！"
         yellow "按回车键继续或Ctrl+c中止"
         read -s
