@@ -1699,6 +1699,7 @@ install_php_part1()
     cd ..
     rm -rf "${php_version}"
     instal_php_imagick
+    instal_php_apcu
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
