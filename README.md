@@ -107,7 +107,7 @@ Red Hat基系统(包括CentOS、fedora)：
 ```
 ### 2. 获取/更新脚本
 ```bash
-wget -O Xray-TLS+Web-setup.sh --no-check-certificate https://github.com/kirin10000/Xray-script/raw/main/Xray-TLS+Web-setup.sh
+wget -O Xray-TLS+Web-setup.sh --no-check-certificate https://github.com/eysp/Xray-script/raw/main/Xray-TLS+Web-setup.sh
 ```
 ### 3. 执行脚本
 ```bash
