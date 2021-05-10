@@ -2168,8 +2168,8 @@ EOF
         else
 cat >> $nginx_config<<EOF
     location / {
-        proxy_pass ${pretend_list[$i]};
-        proxy_set_header referer "${pretend_list[$i]}";
+        proxy_set_header Host  \$http_host;
+        proxy_pass "${pretend_list[$i]}";
     }
 EOF
         fi
