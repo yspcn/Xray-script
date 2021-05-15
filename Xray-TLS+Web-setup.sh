@@ -1719,6 +1719,36 @@ instal_php_redis()
     rm -f aredis-5.3.4.tgz
     rm -rf redis-5.3.4
 }
+instal_redis()
+{
+    if ! wget wget http://download.redis.io/releases/redis-6.2.3.tar.gz; then
+        yellow "获取php-redis源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf redis-6.2.3.tar.gz
+    cd redis-6.2.3
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "redis编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+    mkdir -p /etc/redis
+    sed -i s/daemonize no/daemonize yes/g redis.conf
+    cp redis.conf /etc/redis/
+    redis-server /etc/redis/redis.conf
+    echo -e "@reboot nohup redis-server /etc/redis/redis.conf" >> /etc/crontab
+    cd ..
+    rm -f redis-6.2.3.tar.gz
+    rm -rf redis-6.2.3
+}
 install_php_part1()
 {
     green "正在安装php。。。。"
