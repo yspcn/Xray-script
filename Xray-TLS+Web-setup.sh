@@ -1679,7 +1679,7 @@ instal_php_apcu()
     if ! make install; then
         swap_off
         yellow "php-apcu编译失败"
-        green  "欢迎进行Bug report(https://github.com/kirin10000/Xray-script/issues)，感谢您的支持"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
         yellow "在Bug修复前，建议使用Ubuntu最新版系统"
         yellow "按回车键继续或者按Ctrl+c终止"
         read -s
@@ -1690,6 +1690,34 @@ instal_php_apcu()
     cd ..
     rm -f apcu-5.1.20.tgz
     rm -rf apcu-5.1.20
+}
+instal_php_redis()
+{
+    if ! wget http://pecl.php.net/get/redis-5.3.4.tgz; then
+        yellow "获取php-redis源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf redis-5.3.4.tgz
+    cd redis-5.3.4
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-redis编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv redis.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -f aredis-5.3.4.tgz
+    rm -rf redis-5.3.4
 }
 install_php_part1()
 {
