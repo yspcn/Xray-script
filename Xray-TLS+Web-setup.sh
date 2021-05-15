@@ -1688,6 +1688,7 @@ instal_php_apcu()
     fi
 #    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
     cd ..
+    rm -f apcu-5.1.20.tgz
     rm -rf apcu-5.1.20
 }
 install_php_part1()
