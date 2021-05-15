@@ -1744,7 +1744,7 @@ instal_redis()
     sed -i s/daemonize no/daemonize yes/g redis.conf
     cp redis.conf /etc/redis/
     redis-server /etc/redis/redis.conf
-    echo -e "@reboot nohup redis-server /etc/redis/redis.conf" >> /etc/crontab
+    echo -e "@reboot redis-server /etc/redis/redis.conf" >> /etc/crontab
     cd ..
     rm -f redis-6.2.3.tar.gz
     rm -rf redis-6.2.3
