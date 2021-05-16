@@ -1721,7 +1721,7 @@ instal_php_redis()
 }
 instal_redis()
 {
-    if ! wget wget http://download.redis.io/releases/redis-6.2.3.tar.gz; then
+    if ! wget http://download.redis.io/releases/redis-6.2.3.tar.gz; then
         yellow "获取php-redis源码失败"
         yellow "按回车键继续或者按Ctrl+c终止"
         read -s
