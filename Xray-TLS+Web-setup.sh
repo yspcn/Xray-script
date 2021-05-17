@@ -2411,7 +2411,7 @@ init_web()
         unzip -q -d "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/Website.zip"
     else
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
-        mv "${nginx_prefix}/html/wordpress/wordpress/*" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/wordpress/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         rm -rf "${nginx_prefix}/html/wordpress"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
     fi
