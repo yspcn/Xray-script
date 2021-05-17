@@ -2410,13 +2410,13 @@ init_web()
         mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
         unzip -q -d "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/Website.zip"
 #        mv "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/${true_domain_list[$1]}"
-        mv "${nginx_prefix}/html/${true_domain_list[$1]}/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
 #        rm -rf "${nginx_prefix}/html/wordpress"
     else
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
         mv "${nginx_prefix}/html/nextcloud" "${nginx_prefix}/html/${true_domain_list[$1]}"
-        mv "${nginx_prefix}/html/${true_domain_list[$1]}/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         rm -rf "${nginx_prefix}/html/nextcloud"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
     fi
