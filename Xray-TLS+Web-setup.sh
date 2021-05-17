@@ -2399,7 +2399,7 @@ init_web()
     local url
     [ ${pretend_list[$1]} -eq 2 ] && url="${nextcloud_url}" || url="https://wordpress.org/latest.zip"
     local info
-    [ ${pretend_list[$1]} -eq 2 ] && info="WordPress" || info="WordPress网站"
+    [ ${pretend_list[$1]} -eq 2 ] && info="Nextcloud" || info="网站模板"
     if ! wget -O "${nginx_prefix}/html/Website.zip" "$url"; then
         red    "获取${info}失败"
         yellow "按回车键继续或者按Ctrl+c终止"
@@ -2409,10 +2409,10 @@ init_web()
     if [ ${pretend_list[$1]} -eq 4 ]; then
         mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
         unzip -q -d "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/Website.zip"
-        mv "${nginx_prefix}/html/${true_domain_list[$1]}/wordpress/*" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/wordpress/*" "${nginx_prefix}/html/${true_domain_list[$1]}"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
-        rm -rf "${nginx_prefix}/html/${true_domain_list[$1]}/wordpress"
-        rm -rf "${nginx_prefix}/html/Website.zip"
+        rm -rf "${nginx_prefix}/html"
     else
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
         mv "${nginx_prefix}/html/nextcloud" "${nginx_prefix}/html/${true_domain_list[$1]}"
