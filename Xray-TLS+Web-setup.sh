@@ -2396,7 +2396,7 @@ init_web()
         return 0
     fi
     local url
-    [ ${pretend_list[$1]} -eq 2 ] && url="${nextcloud_url}" || url="https://cn.wordpress.org/latest-zh_CN.zip"
+    [ ${pretend_list[$1]} -eq 2 ] && url="${nextcloud_url}" || url="https://wordpress.org/latest.zip"
     local info
     [ ${pretend_list[$1]} -eq 2 ] && info="WordPress" || info="WordPress网站"
     if ! wget -O "${nginx_prefix}/html/Website.zip" "$url"; then
@@ -2410,7 +2410,8 @@ init_web()
         unzip -q -d "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/Website.zip"
     else
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
-        mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/wordpress/*" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        rm -rf "${nginx_prefix}/html/wordpress"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
     fi
     rm -rf "${nginx_prefix}/html/Website.zip"
