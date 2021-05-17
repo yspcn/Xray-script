@@ -4,6 +4,8 @@
 修改自定义反向代理脚本，输入（127.0.0.1+nps或frp配置文件的http_proxy_port端口）即可配合frps和nps穿透
 
 添加自动集成apcu缓存，解决nextcloud缓存提示问题，需自己添加nextcloud的config.php脚本
+
+修改自定义模板页为wordpress网站，支持一键安装wordpress，主要安装也没是英文的
 ## 目录
 [1. 脚本特性](#脚本特性)
 
