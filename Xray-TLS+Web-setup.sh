@@ -1447,11 +1447,11 @@ readPretend()
         tyblue " 1. Cloudreve \\033[32m(推荐)"
         purple "     个人网盘"
         tyblue " 2. Nextcloud \\033[32m(推荐)"
-        purple "     个人网盘，需安装php"
+        purple "     个人网盘，需安装php，自动集成apcu缓存模块"
         tyblue " 3. 403页面"
         purple "     模拟网站后台"
         tyblue " 4. WordPress博客网站"
-        purple "     WordPress博客网站，需要中文自行选择安装"
+        purple "     必须要先安装一个nextcloud才能加，否则不会自动安装PHP"
         tyblue " 5. 自定义反向代理网页 \\033[31m(不推荐)"
         echo
         green  " 内存<128MB 建议选择 403页面"
@@ -2407,16 +2407,14 @@ init_web()
     fi
     rm -rf "${nginx_prefix}/html/${true_domain_list[$1]}"
     if [ ${pretend_list[$1]} -eq 4 ]; then
-        mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
+#        mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
         mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
     else
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
         mv "${nginx_prefix}/html/nextcloud" "${nginx_prefix}/html/${true_domain_list[$1]}"
-        mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         rm -rf "${nginx_prefix}/html/nextcloud"
-        rm -rf "${nginx_prefix}/html/wordpress"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
     fi
     rm -rf "${nginx_prefix}/html/Website.zip"
