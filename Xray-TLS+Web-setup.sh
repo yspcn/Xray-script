@@ -1450,8 +1450,8 @@ readPretend()
         purple "     个人网盘，需安装php"
         tyblue " 3. 403页面"
         purple "     模拟网站后台"
-        tyblue " 4. 自定义静态网站"
-        purple "     不建议小白选择，默认为Nextcloud登陆界面，强烈建议自行更换"
+        tyblue " 4. WordPress网站"
+        purple "     WordPress网站，需要英文自行更换"
         tyblue " 5. 自定义反向代理网页 \\033[31m(不推荐)"
         echo
         green  " 内存<128MB 建议选择 403页面"
@@ -2396,9 +2396,9 @@ init_web()
         return 0
     fi
     local url
-    [ ${pretend_list[$1]} -eq 2 ] && url="${nextcloud_url}" || url="https://github.com/kirin10000/Xray-script/raw/main/Website-Template.zip"
+    [ ${pretend_list[$1]} -eq 2 ] && url="${nextcloud_url}" || url="https://cn.wordpress.org/latest-zh_CN.zip"
     local info
-    [ ${pretend_list[$1]} -eq 2 ] && info="Nextcloud" || info="网站模板"
+    [ ${pretend_list[$1]} -eq 2 ] && info="WordPress" || info="WordPress网站"
     if ! wget -O "${nginx_prefix}/html/Website.zip" "$url"; then
         red    "获取${info}失败"
         yellow "按回车键继续或者按Ctrl+c终止"
@@ -2410,7 +2410,7 @@ init_web()
         unzip -q -d "${nginx_prefix}/html/${true_domain_list[$1]}" "${nginx_prefix}/html/Website.zip"
     else
         unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/Website.zip"
-        mv "${nginx_prefix}/html/nextcloud" "${nginx_prefix}/html/${true_domain_list[$1]}"
+        mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
     fi
     rm -rf "${nginx_prefix}/html/Website.zip"
