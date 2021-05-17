@@ -1450,8 +1450,8 @@ readPretend()
         purple "     个人网盘，需安装php"
         tyblue " 3. 403页面"
         purple "     模拟网站后台"
-        tyblue " 4. WordPress英文网站"
-        purple "     WordPress英文网站，需要中文自行后台安装"
+        tyblue " 4. WordPress博客网站"
+        purple "     WordPress博客网站，需要中文自行选择安装"
         tyblue " 5. 自定义反向代理网页 \\033[31m(不推荐)"
         echo
         green  " 内存<128MB 建议选择 403页面"
