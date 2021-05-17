@@ -5,7 +5,9 @@
 
 添加自动集成apcu缓存，解决nextcloud缓存提示问题，需自己添加nextcloud的config.php脚本
 
-删除自定义模板页改为wordpress安装，前提是必须要先安装一个nextcloud做主站，支持一键安装wordpress，安装语言自己选
+删除自定义模板页改为wordpress安装，前提是必须要先安装一个nextcloud做主站，支持一键安装wordpress
+
+经测试wordpress和nextcloud网站目录删除原有程序，可以手动改安装phpmyadmin
 ## 目录
 [1. 脚本特性](#脚本特性)
 
