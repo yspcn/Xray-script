@@ -26,7 +26,7 @@ nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 
-php_version="php-7.4.18"
+php_version="php-7.4.19"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
@@ -1728,9 +1728,11 @@ instal_redis()
     fi
     tar -zvxf redis-6.2.3.tar.gz
     cd redis-6.2.3
+    mkdir -p /usr/local/redis/
+    mkdir -p /usr/local/redis/etc
     swap_on 380
-    make
-    if ! make install; then
+    make PREFIX=/usr/local/redis
+    if ! make PREFIX=/usr/local/redis install; then
         swap_off
         yellow "redis编译失败"
         green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
@@ -1740,11 +1742,23 @@ instal_redis()
     else
         swap_off
     fi
-    mkdir -p /etc/redis
-    sed -i s/daemonize no/daemonize yes/g redis.conf
-    cp redis.conf /etc/redis/
-    redis-server /etc/redis/redis.conf
-    echo -e "@reboot redis-server /etc/redis/redis.conf" >> /etc/crontab
+    cp ./redis.conf /usr/local/redis/etc/redis.conf
+    if [ ! -f /usr/local/redis/bin/redis-server ]; then
+    printf "Error: redis compile install failed!\n"
+    yellow "安装redis失败"
+    yellow "按回车键继续或者按Ctrl+c终止"
+    read -s
+    fi
+    sed -i 's/^daemonize no/daemonize yes/g' /usr/local/redis/etc/redis.conf
+    sed -i 's/^dir .\//dir \/data\/redis/g' /usr/local/redis/etc/redis.conf
+    sed -i 's/^logfile ""/logfile \/var\/log\/redis\/redislog/g' /usr/local/redis/etc/redis.conf
+    sed -i 's/^pidfile \/var\/run\/redis.pid/pidfile \/var\/run\/redis\/redis.pid/g' /usr/local/redis/etc/redis.conf
+    sed -i 's/^# unixsocket \/tmp\/redis.sock/unixsocket \/var\/run\/redis\/redis.sock/g' /usr/local/redis/etc/redis.conf
+    sed -i 's/^# unixsocketperm 700/unixsocketperm 755/g' /usr/local/redis/etc/redis.conf
+    wget https://github.com/doitphp/lnmp/raw/master/Redis/setupShell/redis.rcd.txt
+    cp ../redis.rcd.txt /etc/init.d/redisd
+    update-rc.d redisd defaults
+#    echo -e "@reboot redis-server /etc/redis/redis.conf" >> /etc/crontab
     cd ..
     rm -f redis-6.2.3.tar.gz
     rm -rf redis-6.2.3
