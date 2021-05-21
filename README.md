@@ -1,5 +1,5 @@
 # Xray-TLS+Web搭建/管理脚本
-修改PHP版本为7.4.18，兼容更多的PHP程序
+修改PHP版本为7.4.19，兼容更多的PHP程序
 
 修改自定义反向代理脚本，输入（127.0.0.1+nps或frp配置文件的http_proxy_port端口）即可配合frps和nps穿透
 
