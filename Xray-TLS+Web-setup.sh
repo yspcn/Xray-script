@@ -2243,6 +2243,7 @@ EOF
 cat >> $nginx_config<<EOF
     location / {
         proxy_set_header Host  \$http_host;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_pass "${pretend_list[$i]}";
     }
 EOF
