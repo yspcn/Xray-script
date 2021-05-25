@@ -884,7 +884,7 @@ doupdate()
                 do-release-upgrade
             fi
             $debian_package_manager update
-            $debian_package_manager -y --auto-remove --purge full-upgrade
+            $debian_package_manager -y --auto-remove --purge --no-install-recommends full-upgrade
         done
     }
     while ((1))
@@ -922,7 +922,7 @@ doupdate()
         $redhat_package_manager -y autoremove
         $redhat_package_manager -y update
         $debian_package_manager update
-        $debian_package_manager -y --auto-remove --purge full-upgrade
+        $debian_package_manager -y --auto-remove --purge --no-install-recommends full-upgrade
         $debian_package_manager -y --purge autoremove
         $debian_package_manager clean
         $redhat_package_manager -y autoremove
@@ -2919,7 +2919,7 @@ check_script_update()
 }
 update_script()
 {
-    rm -rf "${BASH_SOURCE[0]}"
+#    rm -rf "${BASH_SOURCE[0]}"
     if ! wget -O "${BASH_SOURCE[0]}" "https://github.com/eysp/Xray-script/raw/main/Xray-TLS+Web-setup.sh" && ! wget -O "${BASH_SOURCE[0]}" "https://github.com/eysp/Xray-script/raw/main/Xray-TLS+Web-setup.sh"; then
         red "更新脚本失败！"
         yellow "按回车键继续或Ctrl+c中止"
@@ -2987,7 +2987,7 @@ install_check_update_update_php()
     else
         systemctl stop php-fpm
     fi
-    green "更新完成！"
+    green "安装/更新完成！"
 }
 check_update_update_nginx()
 {
@@ -3389,11 +3389,11 @@ simplify_system()
         $redhat_package_manager -y remove openssl "perl*"
     else
         local temp_remove_list=('openssl' 'snapd' 'kdump-tools' 'flex' 'make' 'automake' '^cloud-init' 'pkg-config' '^gcc-[1-9][0-9]*$' 'libffi-dev' '^cpp-[1-9][0-9]*$' 'curl' '^python' '^python.*:i386' '^libpython' '^libpython.*:i386' 'dbus' 'cron' 'anacron' 'cron' 'at' 'open-iscsi' 'rsyslog' 'acpid' 'libnetplan0' 'glib-networking-common' 'bcache-tools' '^bind([0-9]|-|$)')
-        if ! $debian_package_manager -y --autoremove purge "${temp_remove_list[@]}"; then
+        if ! $debian_package_manager -y --auto-remove purge "${temp_remove_list[@]}"; then
             $debian_package_manager -y -f install
             for i in ${!temp_remove_list[@]}
             do
-                $debian_package_manager -y --autoremove purge "${temp_remove_list[$i]}" || $debian_package_manager -y -f install
+                $debian_package_manager -y --auto-remove purge "${temp_remove_list[$i]}" || $debian_package_manager -y -f install
             done
         fi
         [ $release == "ubuntu" ] && version_ge "$systemVersion" "18.04" && check_important_dependence_installed netplan.io
