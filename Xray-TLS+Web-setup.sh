@@ -1721,18 +1721,15 @@ instal_php_redis()
 }
 instal_redis()
 {
-    if ! wget http://download.redis.io/releases/redis-6.2.3.tar.gz; then
+    if ! git clone https://github.com/redis/redis; then
         yellow "获取php-redis源码失败"
         yellow "按回车键继续或者按Ctrl+c终止"
         read -s
     fi
-    tar -zvxf redis-6.2.3.tar.gz
-    cd redis-6.2.3
-    mkdir -p /usr/local/redis/
-    mkdir -p /usr/local/redis/etc
+    cd redis
     swap_on 380
-    make PREFIX=/usr/local/redis
-    if ! make PREFIX=/usr/local/redis install; then
+    make
+    if ! make install; then
         swap_off
         yellow "redis编译失败"
         green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
@@ -1742,26 +1739,10 @@ instal_redis()
     else
         swap_off
     fi
-    cp ./redis.conf /usr/local/redis/etc/redis.conf
-    if [ ! -f /usr/local/redis/bin/redis-server ]; then
-    printf "Error: redis compile install failed!\n"
-    yellow "安装redis失败"
-    yellow "按回车键继续或者按Ctrl+c终止"
-    read -s
-    fi
-    sed -i 's/^daemonize no/daemonize yes/g' /usr/local/redis/etc/redis.conf
-    sed -i 's/^dir .\//dir \/data\/redis/g' /usr/local/redis/etc/redis.conf
-    sed -i 's/^logfile ""/logfile \/var\/log\/redis\/redislog/g' /usr/local/redis/etc/redis.conf
-    sed -i 's/^pidfile \/var\/run\/redis.pid/pidfile \/var\/run\/redis\/redis.pid/g' /usr/local/redis/etc/redis.conf
-    sed -i 's/^# unixsocket \/tmp\/redis.sock/unixsocket \/var\/run\/redis\/redis.sock/g' /usr/local/redis/etc/redis.conf
-    sed -i 's/^# unixsocketperm 700/unixsocketperm 755/g' /usr/local/redis/etc/redis.conf
-    wget https://github.com/doitphp/lnmp/raw/master/Redis/setupShell/redis.rcd.txt
-    cp ../redis.rcd.txt /etc/init.d/redisd
-    update-rc.d redisd defaults
-#    echo -e "@reboot redis-server /etc/redis/redis.conf" >> /etc/crontab
+    ./utils/install_server.sh
+     systemctl enable redis_6379
     cd ..
-    rm -f redis-6.2.3.tar.gz
-    rm -rf redis-6.2.3
+    rm -rf redis
 }
 install_php_part1()
 {
