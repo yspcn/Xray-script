@@ -1719,7 +1719,7 @@ instal_php_redis()
     rm -f aredis-5.3.4.tgz
     rm -rf redis-5.3.4
 }
-instal_redis()
+install_redis()
 {
     if ! git clone https://github.com/redis/redis; then
         yellow "获取php-redis源码失败"
@@ -1754,6 +1754,8 @@ install_php_part1()
     rm -rf "${php_version}"
     instal_php_imagick
     instal_php_apcu
+    install_redis
+    instal_php_redis
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -1774,6 +1776,7 @@ extension=imagick.so
 zend_extension=opcache.so
 opcache.enable=1
 extension=apcu.so
+extension=redis.so
 EOF
     install -m 644 "${php_prefix}/php-fpm.service.default" $php_service
 cat >> $php_service <<EOF
