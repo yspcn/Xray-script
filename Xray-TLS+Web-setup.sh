@@ -485,7 +485,7 @@ remove_all_domains()
     mkdir "${nginx_prefix}/certs"
     $HOME/.acme.sh/acme.sh --uninstall
     rm -rf $HOME/.acme.sh
-    curl https://get.acme.sh | sh
+    curl https://get.acme.sh | sh  -s email=my@example.com
     $HOME/.acme.sh/acme.sh --upgrade --auto-upgrade
     unset domain_list
     unset true_domain_list
@@ -2857,7 +2857,7 @@ install_update_xray_tls_web()
     if [ $update -eq 0 ]; then
         [ -e $HOME/.acme.sh/acme.sh ] && $HOME/.acme.sh/acme.sh --uninstall
         rm -rf $HOME/.acme.sh
-        curl https://get.acme.sh | sh
+        curl https://get.acme.sh | sh -s email=my@example.com
     fi
     $HOME/.acme.sh/acme.sh --upgrade --auto-upgrade
     get_all_certs
