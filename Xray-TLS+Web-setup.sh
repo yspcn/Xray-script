@@ -26,7 +26,7 @@ nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 
-php_version="php-7.4.19"
+php_version="php-7.4.21"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
@@ -36,7 +36,7 @@ cloudreve_prefix="/usr/local/cloudreve"
 cloudreve_service="/etc/systemd/system/cloudreve.service"
 cloudreve_is_installed=""
 
-nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-21.0.1.zip"
+nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-21.0.3.zip"
 
 xray_config="/usr/local/etc/xray/config.json"
 xray_is_installed=""
