@@ -2232,7 +2232,7 @@ cat >> $nginx_config<<EOF
         proxy_set_header Host  \$http_host;
         proxy_set_header X-Forwarded-Proto https;
         proxy_pass "${pretend_list[$i]}";
-        error_page 497  https://${domain_list[0]}:843;
+        error_page 497  https://${true_domain_list[$i]}:843;
     }
 EOF
         fi
