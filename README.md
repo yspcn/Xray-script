@@ -11,7 +11,7 @@
 
 部分ubuntu系统Nginx编译失败解决方法,手动安装运行命令
 ```
-apt-get install libsoup2.4-dev libenchant-dev
+apt-get install libsoup2.4-dev libenchant-dev -y
 ```
 ## 目录
 [1. 脚本特性](#脚本特性)
