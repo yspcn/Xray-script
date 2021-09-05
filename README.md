@@ -8,6 +8,11 @@
 删除自定义模板页改为wordpress安装，前提是必须要先安装一个nextcloud做主站，支持一键安装wordpress
 
 经测试wordpress和nextcloud网站目录删除原有程序，可以手动改安装phpmyadmin
+
+部分ubuntu系统Nginx编译失败解决方法,手动安装运行命令
+```
+apt-get install libsoup2.4-dev libenchant-dev
+```
 ## 目录
 [1. 脚本特性](#脚本特性)
 
