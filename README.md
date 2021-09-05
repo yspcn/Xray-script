@@ -9,7 +9,7 @@
 
 经测试wordpress和nextcloud网站目录删除原有程序，可以手动改安装phpmyadmin
 
-部分ubuntu系统Nginx编译失败解决方法,手动安装运行命令
+部分ubuntu系统PHP编译失败解决方法,手动安装运行命令
 ```
 apt-get install libsoup2.4-dev libenchant-dev -y
 ```
