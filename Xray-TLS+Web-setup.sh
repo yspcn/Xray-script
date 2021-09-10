@@ -28,6 +28,8 @@ php_version="php-7.4.23"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
+redis-server="6.2.5"
+redis="5.3.4"
 
 cloudreve_version="3.3.2"
 cloudreve_prefix="/usr/local/cloudreve"
@@ -1723,6 +1725,34 @@ instal_php_apcu()
     rm -f apcu-5.1.20.tgz
     rm -rf apcu-5.1.20
 }
+instal_php_redis()
+{
+    if ! wget http://pecl.php.net/get/redis-${redis}.tgz; then
+        yellow "获取php-redis源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf redis-${redis}.tgz
+    cd redis-${redis}
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-redis编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv redis.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -f redis-${redis}.tgz
+    rm -rf redis-${redis}
+}
 install_php_part1()
 {
     green "正在安装php。。。。"
@@ -1735,6 +1765,7 @@ install_php_part1()
     rm -rf "${php_version}"
     instal_php_imagick
     instal_php_apcu
+    instal_php_redis
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -1764,8 +1795,10 @@ upload_max_filesize=0
 max_file_uploads=50000
 extension=imagick.so
 extension=apcu.so
+extension=redis.so
 zend_extension=opcache.so
 opcache.enable=1
+apc.enable_cli=1
 date.timezone=$timezone
 ;如果使用mysql，并且使用unix domain socket方式连接，请正确设置以下内容
 ;pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
