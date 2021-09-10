@@ -4,8 +4,8 @@
 
 wget https://download.redis.io/releases/redis-6.2.5.tar.gz
 
-tar xzf redis-${redis-version}.tar.gz
-cd redis-${redis-version}
+tar xzf redis-6.2.5.tar.gz
+cd redis-6.2.5
 make PREFIX=/usr/local/redis install
 mkdir /usr/local/redis/etc/
 cp redis.conf /usr/local/redis/etc/
