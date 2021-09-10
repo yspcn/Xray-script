@@ -1,11 +1,9 @@
 #!/bin/bash
 
-redis-version="6.2.5"
 
-if ! wget https://download.redis.io/releases/redis-${redis-version}.tar.gz; then
-echo "获取php-redis源码失败"
-echo "按回车键继续或者按Ctrl+c终止"
- fi
+
+wget https://download.redis.io/releases/redis-6.2.5.tar.gz
+
 tar xzf redis-${redis-version}.tar.gz
 cd redis-${redis-version}
 make PREFIX=/usr/local/redis install
