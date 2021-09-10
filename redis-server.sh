@@ -36,7 +36,7 @@ CONF="/usr/local/redis/etc/redis.conf"
    
 case "\$1" in
     start)
-        if [ -f $PIDFILE ]
+        if [ -f \$PIDFILE ]
         then
                 echo "\$PIDFILE exists, process is already running or crashed"
         else
