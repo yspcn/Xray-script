@@ -2,10 +2,12 @@
 
 redis-version="6.2.5"
 
-wget https://download.redis.io/releases/redis-${redis-version}.tar.gz
+if ! wget https://download.redis.io/releases/redis-${redis-version}.tar.gz; then
+echo "获取php-redis源码失败"
+echo "按回车键继续或者按Ctrl+c终止"
+ fi
 tar xzf redis-${redis-version}.tar.gz
 cd redis-${redis-version}
-
 make PREFIX=/usr/local/redis install
 mkdir /usr/local/redis/etc/
 cp redis.conf /usr/local/redis/etc/
@@ -32,16 +34,16 @@ REDIS_CLI=/usr/local/redis/bin/redis-cli
 PIDFILE=/var/run/redis.pid
 CONF="/usr/local/redis/etc/redis.conf"
    
-case "$1" in
+case "\$1" in
     start)
         if [ -f $PIDFILE ]
         then
-                echo "$PIDFILE exists, process is already running or crashed"
+                echo "\$PIDFILE exists, process is already running or crashed"
         else
                 echo "Starting Redis server..."
-                $EXEC $CONF
+                \$EXEC \$CONF
         fi
-        if [ "$?"="0" ] 
+        if [ "\$?"="0" ] 
         then
               echo "Redis is running..."
         fi
@@ -49,9 +51,9 @@ case "$1" in
     stop)
         if [ ! -f $PIDFILE ]
         then
-                echo "$PIDFILE does not exist, process is not running"
+                echo "\$PIDFILE does not exist, process is not running"
         else
-                PID=$(cat $PIDFILE)
+                PID=\$(cat $PIDFILE)
                 echo "Stopping ..."
                 $REDIS_CLI -p $REDISPORT SHUTDOWN
                 while [ -x ${PIDFILE} ]
