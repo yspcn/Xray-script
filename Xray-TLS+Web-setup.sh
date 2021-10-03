@@ -17,14 +17,14 @@ using_swap_now=0
 timezone=""
 
 #安装信息
-nginx_version="nginx-1.20.1"
+nginx_version="nginx-1.21.3"
 openssl_version="openssl-openssl-3.0.0-beta2"
 nginx_prefix="/usr/local/nginx"
 nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 
-php_version="php-7.4.23"
+php_version="php-7.4.24"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
