@@ -1766,6 +1766,7 @@ install_php_part1()
     instal_php_imagick
     instal_php_apcu
     instal_php_redis
+    export PATH=\$PATH:/usr/local/php/bin
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
