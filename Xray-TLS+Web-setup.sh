@@ -1767,7 +1767,7 @@ install_php_part1()
     instal_php_apcu
     instal_php_redis
     export PATH=\$PATH:/usr/local/php/bin
-    ln -s /usr/local/php/bin/php /usr/bin/php
+    ln -s ${php_prefix}/bin/php /usr/bin/php
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -1840,7 +1840,7 @@ compile_nginx()
     sed -i "s/OPTIMIZE[ \\t]*=>[ \\t]*'-O'/OPTIMIZE          => '-O3'/g" src/http/modules/perl/Makefile.PL
     ./configure --prefix=/usr/local/nginx --with-openssl=../$openssl_version --with-mail=dynamic --with-mail_ssl_module --with-stream=dynamic --with-stream_ssl_module --with-stream_realip_module --with-stream_geoip_module=dynamic --with-stream_ssl_preread_module --with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-http_addition_module --with-http_xslt_module=dynamic --with-http_image_filter_module=dynamic --with-http_geoip_module=dynamic --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_degradation_module --with-http_slice_module --with-http_stub_status_module --with-http_perl_module=dynamic --with-pcre --with-libatomic --with-compat --with-cpp_test_module --with-google_perftools_module --with-file-aio --with-threads --with-poll_module --with-select_module --with-cc-opt="-Wno-error -g0 -O3"
     swap_on 480
-    ln -s /usr/local/nginx/sbin/nginx /usr/bin/nginx
+    ln -s ${nginx_prefix}/sbin/nginx /usr/bin/nginx
     if ! make -j$cpu_thread_num; then
         swap_off
         red    "Nginx编译失败！"
