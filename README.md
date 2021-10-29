@@ -1,3 +1,7 @@
+# 自定义动态网站
+```
+https://wordpress.org/latest.zip
+```
 # Xray-TLS+Web搭建/管理脚本
 ## 目录
 [1. 脚本特性](#脚本特性)
