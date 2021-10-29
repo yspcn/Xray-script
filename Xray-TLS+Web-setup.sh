@@ -25,7 +25,7 @@ nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 
-php_version="php-8.0.12"
+php_version="php-7.4.25"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
@@ -1522,7 +1522,7 @@ readPretend()
         purple "     个人网盘，需安装php"
         tyblue " 3. 403页面"
         purple "     模拟网站后台"
-        red    " 4. 自定义静态网站 (不推荐)"
+        red    " 4. 自定义PHP动态网站 (不推荐)"
         red    " 5. 自定义反向代理网页 (不推荐)"
         echo
         green  " 内存<128MB 建议选择 403页面"
@@ -1796,6 +1796,62 @@ instal_php_imagick()
     cd ..
     rm -rf imagick
 }
+instal_php_apcu()
+{
+    if ! wget http://pecl.php.net/get/apcu-5.1.21.tgz; then
+        yellow "获取php-apcu源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf apcu-5.1.21.tgz
+    cd apcu-5.1.21
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-apcu编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -f apcu-5.1.21.tgz
+    rm -rf apcu-5.1.21
+}
+instal_php_redis()
+{
+    if ! wget http://pecl.php.net/get/redis-${redis}.tgz; then
+        yellow "获取php-redis源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf redis-${redis}.tgz
+    cd redis-${redis}
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-redis编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv redis.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -f redis-${redis}.tgz
+    rm -rf redis-${redis}
+}
 install_php_part1()
 {
     green "正在安装php。。。。"
@@ -1807,6 +1863,9 @@ install_php_part1()
     cd ..
     rm -rf "${php_version}"
     instal_php_imagick
+    instal_php_apcu
+    instal_php_redis
+    ln -s ${php_prefix}/bin/php /usr/bin/php
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -1838,6 +1897,8 @@ upload_max_filesize=0
 max_file_uploads=50000
 extension=imagick.so
 zend_extension=opcache.so
+extension=apcu.so
+extension=redis.so
 opcache.enable=1
 date.timezone=$timezone
 ;如果使用mysql，并且使用unix domain socket方式连接，请正确设置以下内容
@@ -1883,6 +1944,7 @@ compile_nginx()
     sed -i 's/NGX_PM_CFLAGS=`$NGX_PERL -MExtUtils::Embed -e ccopts`/NGX_PM_CFLAGS="`$NGX_PERL -MExtUtils::Embed -e ccopts` $CFLAGS"/g' auto/lib/perl/conf
     ./configure --prefix=/usr/local/nginx --with-openssl=../$openssl_version --with-mail=dynamic --with-mail_ssl_module --with-stream=dynamic --with-stream_ssl_module --with-stream_realip_module --with-stream_geoip_module=dynamic --with-stream_ssl_preread_module --with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-http_addition_module --with-http_xslt_module=dynamic --with-http_image_filter_module=dynamic --with-http_geoip_module=dynamic --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_degradation_module --with-http_slice_module --with-http_stub_status_module --with-http_perl_module=dynamic --with-pcre --with-libatomic --with-compat --with-cpp_test_module --with-google_perftools_module --with-file-aio --with-threads --with-poll_module --with-select_module --with-cc-opt="-Wno-error ${cflags}"
     swap_on 480
+    ln -s ${nginx_prefix}/sbin/nginx /usr/bin/nginx
     if ! make -j$cpu_thread_num; then
         swap_off
         red    "Nginx编译失败！"
@@ -2317,11 +2379,15 @@ EOF
             fi
         elif [ "${pretend_list[$i]}" == "4" ]; then
             echo "    root ${nginx_prefix}/html/${true_domain_list[$i]};" >> $nginx_config
+            echo "    include ${nginx_prefix}/conf.d/nextcloud.conf;" >> $nginx_config
         else
 cat >> $nginx_config<<EOF
     location / {
+        proxy_set_header Host  \$http_host;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_pass ${pretend_list[$i]};
         proxy_set_header referer "${pretend_list[$i]}";
+        error_page 502  https://${true_domain_list[$i]}:843\$request_uri;
     }
 EOF
         fi
