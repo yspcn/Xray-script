@@ -29,6 +29,8 @@ php_version="php-7.4.25"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
+redis-server="6.2.5"
+redis="5.3.4"
 
 cloudreve_version="3.3.2"
 cloudreve_prefix="/usr/local/cloudreve"
