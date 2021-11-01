@@ -1902,6 +1902,7 @@ zend_extension=opcache.so
 extension=apcu.so
 extension=redis.so
 opcache.enable=1
+apc.enable_cli=1
 date.timezone=$timezone
 ;如果使用mysql，并且使用unix domain socket方式连接，请正确设置以下内容
 ;pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
