@@ -2031,7 +2031,7 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
     add_header X-Robots-Tag                         "none"          always;
     add_header X-XSS-Protection                     "1; mode=block" always;
     fastcgi_hide_header X-Powered-By;
-    index index.php index.html /index.php\$request_uri;
+    index /index.php /index.html /index.php\$request_uri;
     location = / {
         if ( \$http_user_agent ~ ^DavClnt ) {
             return 302 https://\$host/remote.php/webdav/\$is_args\$args;
