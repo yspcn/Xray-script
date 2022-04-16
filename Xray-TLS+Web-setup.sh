@@ -1699,13 +1699,13 @@ instal_php_imagick()
 }
 instal_php_apcu()
 {
-    if ! wget http://pecl.php.net/get/apcu-5.1.20.tgz; then
+    if ! wget http://pecl.php.net/get/apcu-5.1.21.tgz; then
         yellow "获取php-apcu源码失败"
         yellow "按回车键继续或者按Ctrl+c终止"
         read -s
     fi
-    tar -zvxf apcu-5.1.20.tgz
-    cd apcu-5.1.20
+    tar -zvxf apcu-5.1.21.tgz
+    cd apcu-5.1.21
     ${php_prefix}/bin/phpize
     ./configure --with-php-config=${php_prefix}/bin/php-config
     swap_on 380
@@ -1722,8 +1722,8 @@ instal_php_apcu()
     fi
 #    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
     cd ..
-    rm -f apcu-5.1.20.tgz
-    rm -rf apcu-5.1.20
+    rm -f apcu-5.1.21.tgz
+    rm -rf apcu-5.1.21
 }
 instal_php_redis()
 {
