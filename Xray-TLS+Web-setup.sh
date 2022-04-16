@@ -31,7 +31,7 @@ php_is_installed=""
 redis-server="6.2.5"
 redis="5.3.7"
 
-cloudreve_version="3.3.2"
+cloudreve_version="3.4.2"
 cloudreve_prefix="/usr/local/cloudreve"
 cloudreve_service="/etc/systemd/system/cloudreve.service"
 cloudreve_is_installed=""
