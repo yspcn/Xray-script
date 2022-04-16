@@ -36,7 +36,7 @@ cloudreve_prefix="/usr/local/cloudreve"
 cloudreve_service="/etc/systemd/system/cloudreve.service"
 cloudreve_is_installed=""
 
-nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-22.2.0.zip"
+nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-23.0.3.zip"
 
 xray_config="/usr/local/etc/xray/config.json"
 xray_is_installed=""
