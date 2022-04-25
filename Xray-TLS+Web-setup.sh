@@ -1732,7 +1732,7 @@ readPretend()
         purple "     个人网盘，需安装php"
         tyblue " 3. 403页面"
         purple "     模拟网站后台"
-        red    " 4. 自定义静态网站 (不推荐)"
+        red    " 4. 自定义PHP动态网站 (不推荐)"
         red    " 5. 自定义反向代理网页 (不推荐)"
         echo
         green  " 内存<128MB 建议选择 403页面"
@@ -2613,6 +2613,7 @@ EOF
             fi
         elif [ "${pretend_list[$i]}" == "4" ]; then
             echo "    root ${nginx_prefix}/html/${true_domain_list[$i]};" >> $nginx_config
+            echo "    include ${nginx_prefix}/conf.d/nextcloud.conf;" >> $nginx_config
         else
 cat >> $nginx_config<<EOF
     location / {
