@@ -2088,6 +2088,7 @@ install_php_part1()
     instal_php_imagick
     instal_php_apcu
     instal_php_redis
+    ln -s ${php_prefix}/bin/php /usr/bin/php
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -2119,6 +2120,7 @@ opcache.enable=1
 date.timezone=$timezone
 extension=apcu.so
 extension=redis.so
+apc.enable_cli=1
 
 ;如果使用mysql，并且使用unix domain socket方式连接，请正确设置以下内容
 ;pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
