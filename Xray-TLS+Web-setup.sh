@@ -2388,6 +2388,8 @@ cat >> $nginx_config<<EOF
     location / {
         proxy_set_header Host  \$http_host;
         proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_pass ${pretend_list[$i]};
         proxy_set_header referer "${pretend_list[$i]}";
         error_page 502 https://${true_domain_list[$i]}:843\$request_uri;
