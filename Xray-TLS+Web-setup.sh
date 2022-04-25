@@ -29,6 +29,7 @@ php_version="php-7.4.29"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
+redis="5.3.7"
 
 cloudreve_version="3.5.1"
 cloudreve_prefix="/usr/local/cloudreve"
@@ -2018,6 +2019,62 @@ instal_php_imagick()
     cd ..
     rm -rf imagick
 }
+instal_php_apcu()
+{
+    if ! wget http://pecl.php.net/get/apcu-5.1.21.tgz; then
+        yellow "获取php-apcu源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf apcu-5.1.21.tgz
+    cd apcu-5.1.21
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-apcu编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -f apcu-5.1.21.tgz
+    rm -rf apcu-5.1.21
+}
+instal_php_redis()
+{
+    if ! wget http://pecl.php.net/get/redis-${redis}.tgz; then
+        yellow "获取php-redis源码失败"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    fi
+    tar -zvxf redis-${redis}.tgz
+    cd redis-${redis}
+    ${php_prefix}/bin/phpize
+    ./configure --with-php-config=${php_prefix}/bin/php-config
+    swap_on 380
+    make
+    if ! make install; then
+        swap_off
+        yellow "php-redis编译失败"
+        green  "欢迎进行Bug report(https://github.com/eysp/Xray-script/issues)，感谢您的支持"
+        yellow "在Bug修复前，建议使用Ubuntu最新版系统"
+        yellow "按回车键继续或者按Ctrl+c终止"
+        read -s
+    else
+        swap_off
+    fi
+#    mv redis.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
+    cd ..
+    rm -f redis-${redis}.tgz
+    rm -rf redis-${redis}
+}
 install_php_part1()
 {
     green "正在安装php。。。。"
@@ -2029,6 +2086,8 @@ install_php_part1()
     cd ..
     rm -rf "${php_version}"
     instal_php_imagick
+    instal_php_apcu
+    instal_php_redis
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -2058,6 +2117,8 @@ extension=imagick.so
 zend_extension=opcache.so
 opcache.enable=1
 date.timezone=$timezone
+extension=apcu.so
+extension=redis.so
 
 ;如果使用mysql，并且使用unix domain socket方式连接，请正确设置以下内容
 ;pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
@@ -2553,8 +2614,13 @@ EOF
         else
 cat >> $nginx_config<<EOF
     location / {
+        proxy_set_header Host  \$http_host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_pass ${pretend_list[$i]};
         proxy_set_header referer "${pretend_list[$i]}";
+        error_page 502 https://${true_domain_list[$i]}:843\$request_uri;
     }
 EOF
         fi
