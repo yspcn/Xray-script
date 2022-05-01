@@ -2120,7 +2120,12 @@ opcache.enable=1
 date.timezone=$timezone
 extension=apcu.so
 extension=redis.so
+opcache.enable=1
 apc.enable_cli=1
+opcache.interned_strings_buffer=32
+opcache.max_wasted_percentage = 15
+opcache.validate_timestamps = 1
+opcache.revalidate_freq = 1
 
 ;如果使用mysql，并且使用unix domain socket方式连接，请正确设置以下内容
 ;pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
