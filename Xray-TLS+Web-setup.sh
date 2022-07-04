@@ -19,19 +19,19 @@ timezone=""
 
 #安装信息
 nginx_version="nginx-1.21.6"
-openssl_version="openssl-openssl-3.0.2"
+openssl_version="openssl-openssl-3.0.3"
 nginx_prefix="/usr/local/nginx"
 nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 
-php_version="php-7.4.29"
+php_version="php-7.4.30"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 php_is_installed=""
 redis="5.3.7"
 
-cloudreve_version="3.5.1"
+cloudreve_version="3.5.3"
 cloudreve_prefix="/usr/local/cloudreve"
 cloudreve_service="/etc/systemd/system/cloudreve.service"
 cloudreve_is_installed=""
