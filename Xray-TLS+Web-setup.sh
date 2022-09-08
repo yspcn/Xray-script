@@ -18,7 +18,7 @@ using_swap_now=0
 timezone=""
 
 #安装信息
-nginx_version="nginx-1.22.0"
+nginx_version="nginx-1.23.1"
 openssl_version="openssl-openssl-3.0.3"
 nginx_prefix="/usr/local/nginx"
 nginx_config="${nginx_prefix}/conf.d/xray.conf"
