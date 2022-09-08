@@ -2592,6 +2592,7 @@ init_web()
         turn_on_off_cloudreve
     elif [ "${pretend_list[$1]}" == "4" ]; then
         mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
+        chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
         turn_on_off_php
         turn_on_off_cloudreve
     else
