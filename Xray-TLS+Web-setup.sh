@@ -2020,6 +2020,7 @@ http {
 EOF
 cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
     client_max_body_size 0;
+    #client_body_timeout 300s;
     fastcgi_buffers 64 4K;
     gzip on;
     gzip_vary on;
@@ -2035,7 +2036,7 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
     add_header X-Robots-Tag                         "none"          always;
     add_header X-XSS-Protection                     "1; mode=block" always;
     fastcgi_hide_header X-Powered-By;
-    index /index.php /index.html /index.php\$request_uri;
+    index index.php index.html /index.php\$request_uri;
     location = / {
         if ( \$http_user_agent ~ ^DavClnt ) {
             return 302 https://\$host/remote.php/webdav/\$is_args\$args;
@@ -2056,6 +2057,7 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
     location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)(?:$|/)  { return 404; }
     location ~ ^/(?:\\.|autotest|occ|issue|indie|db_|console)                { return 404; }
     location ~ \\.php(?:$|/) {
+        rewrite ^/(?!index|remote|public|cron|core\\/ajax\\/update|status|ocs\\/v[12]|updater\\/.+|oc[ms]-provider\\/.+|.+\\/richdocumentscode\\/proxy) /index.php\$request_uri;
         fastcgi_split_path_info ^(.+?\\.php)(/.*)$;
         set \$path_info \$fastcgi_path_info;
         try_files \$fastcgi_script_name =404;
@@ -2066,11 +2068,13 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
         fastcgi_param front_controller_active true;
-        fastcgi_pass unix:/dev/shm/php-fpm_unixsocket/php.sock;
+        fastcgi_pass unix:/dev/shm/php-fpm/php-fpm.sock;
         fastcgi_intercept_errors on;
         fastcgi_request_buffering off;
+        fastcgi_read_timeout 24h;
+        fastcgi_max_temp_file_size 0;
     }
-    location ~ \\.(?:css|js|svg|gif)$ {
+    location ~ \\.(?:css|js|svg|gif|png|jpg|ico)$ {
         try_files \$uri /index.php\$request_uri;
         expires 6M;
         access_log off;
