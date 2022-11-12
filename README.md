@@ -1,7 +1,19 @@
-# 自定义动态网站
+# 自定义动态网站,集成discuz伪静态，自动部署wordpress
 ```
 https://wordpress.org/latest.zip
+修改xray启用获取ip
+修改nginx反代能读取ip
+添加自动部署wordpress
+添加自动部署nextcloud细节，脚本自动修改添加apcu缓存和默认电话地区,注意安装提示
 ```
+```
+apt install screen -y && yum install screen
+```
+安装mariadb数据库脚本，修改“password”为你的密码，此处为mariadb的root密码
+```
+screen -S mariadb && wget -c http://mirrors.linuxeye.com/oneinstack-full.tar.gz && tar xzf oneinstack-full.tar.gz && ./oneinstack/install.sh --db_option 7 --dbinstallmethod 1 --dbrootpwd password --iptables && rm oneinstack-full.tar.gz
+```
+
 # Xray-TLS+Web搭建/管理脚本
 ## 目录
 [1. 脚本特性](#脚本特性)
