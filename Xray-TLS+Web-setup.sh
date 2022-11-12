@@ -143,7 +143,7 @@ version_ge()
 #检查脚本更新
 check_script_update()
 {
-    [ "$(md5sum "${BASH_SOURCE[0]}" | awk '{print $1}')" == "$(md5sum <(wget -O - "https://github.com/kirin10000/Xray-script/raw/main/Xray-TLS+Web-setup.sh") | awk '{print $1}')" ] && return 1 || return 0
+    [ "$(md5sum "${BASH_SOURCE[0]}" | awk '{print $1}')" == "$(md5sum <(wget -O - "https://github.com/yspcn/Xray-script/raw/main/Xray-TLS+Web-setup.sh") | awk '{print $1}')" ] && return 1 || return 0
 }
 #更新脚本
 update_script()
@@ -152,8 +152,8 @@ update_script()
         green "脚本更新完成，请重新运行脚本！"
         exit 0
     else
-#        red "更新脚本失败！"
-        exit 1
+        red "更新脚本失败！"
+#        exit 1
     fi
 }
 ask_update_script()
@@ -1589,11 +1589,11 @@ install_bbr()
                     fi
                     local temp_kernel_sh_url
                     if [ $choice -eq 1 ]; then
-                        temp_kernel_sh_url="https://github.com/kirin10000/update-kernel/raw/master/update-kernel-stable.sh"
+                        temp_kernel_sh_url="https://github.com/yspcn/update-kernel/raw/master/update-kernel-stable.sh"
                     elif [ $choice -eq 4 ]; then
-                        temp_kernel_sh_url="https://github.com/kirin10000/update-kernel/raw/master/update-kernel.sh"
+                        temp_kernel_sh_url="https://github.com/yspcn/update-kernel/raw/master/update-kernel.sh"
                     else
-                        temp_kernel_sh_url="https://github.com/kirin10000/xanmod-install/raw/main/xanmod-install.sh"
+                        temp_kernel_sh_url="https://github.com/yspcn/xanmod-install/raw/main/xanmod-install.sh"
                     fi
                     if ! wget -O kernel.sh "$temp_kernel_sh_url"; then
                         red    "获取内核安装脚本失败"
@@ -2367,6 +2367,78 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
         try_files \$uri \$uri/ /index.php\$request_uri;
     }
 EOF
+cat > ${nginx_prefix}/conf.d/wordpress.conf <<EOF
+    index index.php index.html /index.php\$request_uri;
+    location ~ \\.php(?:$|/) {
+        fastcgi_split_path_info ^(.+?\\.php)(/.*)$;
+        set \$path_info \$fastcgi_path_info;
+        try_files \$fastcgi_script_name =404;
+        include fastcgi.conf;
+        fastcgi_param PATH_INFO \$path_info;
+        fastcgi_param REMOTE_ADDR 127.0.0.1;
+        fastcgi_param SERVER_PORT 443;
+        fastcgi_param HTTPS on;
+        fastcgi_param modHeadersAvailable true;
+        fastcgi_param front_controller_active true;
+        fastcgi_pass unix:/dev/shm/php-fpm/php-fpm.sock;
+        fastcgi_intercept_errors on;
+        fastcgi_request_buffering off;
+        fastcgi_read_timeout 24h;
+        fastcgi_max_temp_file_size 0;
+    }
+    location / {
+      try_files \$uri \$uri/ /index.php?\$args;
+    }
+    rewrite /wp-admin$ \$scheme://\$host\$uri/ permanent;
+    location ~* ^/wp-content/uploads/.*\.php$ {
+      deny all;
+    }
+EOF
+cat > ${nginx_prefix}/conf.d/custom.conf <<EOF
+    index index.php index.html /index.php\$request_uri;
+    location ~ \\.php(?:$|/) {
+        fastcgi_split_path_info ^(.+?\\.php)(/.*)$;
+        set \$path_info \$fastcgi_path_info;
+        try_files \$fastcgi_script_name =404;
+        include fastcgi.conf;
+        fastcgi_param PATH_INFO \$path_info;
+        fastcgi_param REMOTE_ADDR 127.0.0.1;
+        fastcgi_param SERVER_PORT 443;
+        fastcgi_param HTTPS on;
+        fastcgi_param modHeadersAvailable true;
+        fastcgi_param front_controller_active true;
+        fastcgi_pass unix:/dev/shm/php-fpm/php-fpm.sock;
+        fastcgi_intercept_errors on;
+        fastcgi_request_buffering off;
+        fastcgi_read_timeout 24h;
+        fastcgi_max_temp_file_size 0;
+    }
+rewrite ^([^\.]*)/topic-(.+)\.html$ \$1/portal.php?mod=topic&topic=\$2 last;
+rewrite ^([^\.]*)/article-([0-9]+)-([0-9]+)\.html$ \$1/portal.php?mod=view&aid=\$2&page=\$3 last;
+rewrite ^([^\.]*)/forum-(\w+)-([0-9]+)\.html$ \$1/forum.php?mod=forumdisplay&fid=\$2&page=\$3 last;
+rewrite ^([^\.]*)/thread-([0-9]+)-([0-9]+)-([0-9]+)\.html$ \$1/forum.php?mod=viewthread&tid=\$2&extra=page%3D\$4&page=\$3 last;
+rewrite ^([^\.]*)/group-([0-9]+)-([0-9]+)\.html$ \$1/forum.php?mod=group&fid=\$2&page=\$3 last;
+rewrite ^([^\.]*)/space-(username|uid)-(.+)\.html$ \$1/home.php?mod=space&\$2=\$3 last;
+rewrite ^([^\.]*)/blog-([0-9]+)-([0-9]+)\.html$ \$1/home.php?mod=space&uid=\$2&do=blog&id=\$3 last;
+rewrite ^([^\.]*)/(fid|tid)-([0-9]+)\.html$ \$1/index.php?action=\$2&value=\$3 last;
+rewrite ^([^\.]*)/([a-z]+[a-z0-9_]*)-([a-z0-9_\-]+)\.html$ \$1/plugin.php?id=\$2:\$3 last;
+location / {
+  try_files \$uri \$uri/ /index.php?\$args;
+  if (!-e \$request_filename) {
+    rewrite ^(.*)$ /index.php?s=\$1 last;
+    break;
+  }
+  if (-f \$request_filename/index.html){
+    rewrite (.*) \$1/index.html break;
+  }
+  if (-f \$request_filename/index.php){
+    rewrite (.*) \$1/index.php;
+  }
+  if (!-f $request_filename){
+    rewrite (.*) /index.php;
+  }
+}
+EOF
     config_service_nginx
     systemctl enable nginx
     nginx_is_installed=1
@@ -2672,10 +2744,10 @@ EOF
             fi
         elif [ "${pretend_list[$i]}" == "4" ]; then
             echo "    root ${nginx_prefix}/html/${true_domain_list[$i]};" >> $nginx_config
-           echo "    include ${nginx_prefix}/conf.d/nextcloud.conf;" >> $nginx_config
+           echo "    include ${nginx_prefix}/conf.d/custom.conf;" >> $nginx_config
         elif [ "${pretend_list[$i]}" == "6" ]; then
             echo "    root ${nginx_prefix}/html/${true_domain_list[$i]};" >> $nginx_config
-           echo "    include ${nginx_prefix}/conf.d/nextcloud.conf;" >> $nginx_config
+           echo "    include ${nginx_prefix}/conf.d/wordpress.conf;" >> $nginx_config
         else
 cat >> $nginx_config<<EOF
     location / {
@@ -2989,11 +3061,22 @@ let_init_nextcloud()
     tyblue " 1.自定义管理员的用户名和密码"
     tyblue " 2.数据库类型选择SQLite"
     tyblue " 3.建议不勾选\"安装推荐的应用\"，因为进去之后还能再安装"
+	crontab -l > ${domain_list[$1]}
+	echo "*/5 * * * * sudo -u www-data php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php &" >> ${domain_list[$1]}
+	crontab ${domain_list[$1]}
+	rm ${domain_list[$1]}
     sleep 15s
+
     echo -e "\\n\\n"
-    tyblue "按两次回车键以继续。。。"
+    tyblue "务必先打开网址安装好nextcloud，否则会报错，按两次回车键以继续自动添加nextcloud默认缺失配置。。。"
     read -s
     read -s
+	sed -i '$d' ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+    echo "  'default_phone_region' => 'CN'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+    echo "  'default_language' => 'zh_CN'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+    echo "  'default_locale' => 'zh'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+    echo "  'memcache.local' => '\\OC\\Memcache\\APCu'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+	echo ");" >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo
 }
 
