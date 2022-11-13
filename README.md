@@ -1,10 +1,10 @@
 # 自定义动态网站,集成discuz伪静态，自动部署wordpress
 ```
 https://wordpress.org/latest.zip
-修改xray启用获取ip
-修改nginx反代能读取ip
+修改xray启用获取ip，启用xray日志，级别为警告
+修改nginx反代能读取ip，启用nginx日志
 添加自动部署wordpress
-添加自动部署nextcloud细节，脚本自动修改添加apcu缓存和默认电话地区,注意安装提示
+添加自动部署nextcloud细节，脚本自动修改添加apcu缓存和默认电话地区，自动创建cron定时任务,注意安装提示
 php降级为7.4.32，适合大多数php程序
 配合nps或frp可以反代https/http，https自动跳转到843端口，请放行
 nginx脚本默认加载套cf读取客户端真实ip
