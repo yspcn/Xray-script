@@ -7,6 +7,8 @@ https://wordpress.org/latest.zip
 添加自动部署nextcloud细节，脚本自动修改添加apcu缓存和默认电话地区,注意安装提示
 php降级为7.4.32，适合大多数php程序
 配合nps或frp可以反代https/http，https自动跳转到843端口，请放行
+nginx脚本默认加载套cf读取客户端真实ip
+自定义动态网站集成thinkPHP和Discuzd伪静态集合
 ```
 ```
 apt install screen -y && yum install screen
