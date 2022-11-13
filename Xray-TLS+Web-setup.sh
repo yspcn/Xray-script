@@ -2339,7 +2339,7 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
-        fastcgi_param REMOTE_ADDR 127.0.0.1;
+        fastcgi_param REMOTE_ADDR \$proxy_protocol_addr;
         fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
@@ -2368,14 +2368,14 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
     }
 EOF
 cat > ${nginx_prefix}/conf.d/wordpress.conf <<EOF
-    index index.php index.html /index.php\$request_uri;
+    index index.php index.html;
     location ~ \\.php(?:$|/) {
         fastcgi_split_path_info ^(.+?\\.php)(/.*)$;
         set \$path_info \$fastcgi_path_info;
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
-        fastcgi_param REMOTE_ADDR 127.0.0.1;
+        fastcgi_param REMOTE_ADDR \$proxy_protocol_addr;
         fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
@@ -2395,14 +2395,14 @@ cat > ${nginx_prefix}/conf.d/wordpress.conf <<EOF
     }
 EOF
 cat > ${nginx_prefix}/conf.d/custom.conf <<EOF
-    index index.php index.html /index.php\$request_uri;
+    index index.php index.html;
     location ~ \\.php(?:$|/) {
         fastcgi_split_path_info ^(.+?\\.php)(/.*)$;
         set \$path_info \$fastcgi_path_info;
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
-        fastcgi_param REMOTE_ADDR 127.0.0.1;
+        fastcgi_param REMOTE_ADDR \$proxy_protocol_addr;
         fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
@@ -2438,6 +2438,37 @@ location / {
     rewrite (.*) /index.php;
   }
 }
+EOF
+cat > ${nginx_prefix}/conf.d/cloudflare.conf <<EOF
+# cloudflare ips
+# https://www.cloudflare.com/ips/
+set_real_ip_from 127.0.0.1;
+set_real_ip_from 173.245.48.0/20;
+set_real_ip_from 103.21.244.0/22;
+set_real_ip_from 103.22.200.0/22;
+set_real_ip_from 103.31.4.0/22;
+set_real_ip_from 141.101.64.0/18;
+set_real_ip_from 108.162.192.0/18;
+set_real_ip_from 190.93.240.0/20;
+set_real_ip_from 188.114.96.0/20;
+set_real_ip_from 197.234.240.0/22;
+set_real_ip_from 198.41.128.0/17;
+set_real_ip_from 162.158.0.0/15;
+set_real_ip_from 172.64.0.0/13;
+set_real_ip_from 131.0.72.0/22;
+set_real_ip_from 104.16.0.0/13;
+set_real_ip_from 104.24.0.0/14;
+set_real_ip_from 2400:cb00::/32;
+set_real_ip_from 2606:4700::/32;
+set_real_ip_from 2803:f800::/32;
+set_real_ip_from 2405:b500::/32;
+set_real_ip_from 2405:8100::/32;
+set_real_ip_from 2a06:98c0::/29;
+set_real_ip_from 2c0f:f248::/32;
+
+real_ip_recursive on;
+#set_real_ip_from unix:;
+real_ip_header proxy_protocol;
 EOF
     config_service_nginx
     systemctl enable nginx
@@ -2649,8 +2680,8 @@ config_nginx()
     local i
 cat > $nginx_config<<EOF
 server {
-    listen 80 reuseport default_server;
-    listen [::]:80 reuseport default_server;
+    listen 80 reuseport default_server proxy_protocol;
+    listen [::]:80 reuseport default_server proxy_protocol;
     return 301 https://${domain_list[0]};
 }
 server {
@@ -2670,8 +2701,8 @@ cat >> $nginx_config<<EOF
 server {
     listen 80;
     listen [::]:80;
-    listen unix:/dev/shm/nginx/default.sock;
-    listen unix:/dev/shm/nginx/h2.sock http2;
+    listen unix:/dev/shm/nginx/default.sock proxy_protocol;
+    listen unix:/dev/shm/nginx/h2.sock http2 proxy_protocol;
     server_name ${temp_domain_list2[@]};
     return 301 https://www.\$host\$request_uri;
 }
@@ -2679,8 +2710,6 @@ EOF
     fi
 cat >> $nginx_config<<EOF
 server {
-    proxy_set_header X-Real-IP \$proxy_protocol_addr;
-    proxy_set_header X-Forwarded-For \$proxy_protocol_addr;
     listen unix:/dev/shm/nginx/default.sock default_server proxy_protocol;
     listen unix:/dev/shm/nginx/h2.sock http2 default_server proxy_protocol;
     return 301 https://${domain_list[0]};
@@ -2690,12 +2719,11 @@ EOF
     do
 cat >> $nginx_config<<EOF
 server {
-    proxy_set_header X-Real-IP \$proxy_protocol_addr;
-    proxy_set_header X-Forwarded-For \$proxy_protocol_addr;
     listen unix:/dev/shm/nginx/default.sock proxy_protocol;
     listen unix:/dev/shm/nginx/h2.sock http2 proxy_protocol;
     server_name ${domain_list[$i]};
     add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload" always;
+	include ${nginx_prefix}/conf.d/cloudflare.conf;
 EOF
         if [ $protocol_2 -ne 0 ]; then
 cat >> $nginx_config<<EOF
