@@ -2723,7 +2723,7 @@ server {
     listen unix:/dev/shm/nginx/h2.sock http2 proxy_protocol;
     server_name ${domain_list[$i]};
     add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload" always;
-	include ${nginx_prefix}/conf.d/cloudflare.conf;
+    include ${nginx_prefix}/conf.d/cloudflare.conf;
 EOF
         if [ $protocol_2 -ne 0 ]; then
 cat >> $nginx_config<<EOF
