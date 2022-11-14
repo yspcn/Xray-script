@@ -2680,8 +2680,8 @@ config_nginx()
     local i
 cat > $nginx_config<<EOF
 server {
-    listen 80 reuseport default_server proxy_protocol;
-    listen [::]:80 reuseport default_server proxy_protocol;
+    listen 80 reuseport default_server;
+    listen [::]:80 reuseport default_server;
     return 301 https://${domain_list[0]};
 }
 server {
@@ -2836,8 +2836,7 @@ EOF
 cat >> $xray_config <<EOF
                     {
                         "path": "$path",
-                        "dest": "@/dev/shm/xray/ws.sock",
-                        "xver": 1
+                        "dest": "@/dev/shm/xray/ws.sock"
                     },
 EOF
     fi
