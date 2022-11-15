@@ -1846,31 +1846,24 @@ readPretend()
                 ! ask_if "确定选择吗？(y/n)" && queren=0
             fi
         elif [ $pretend -eq 4 ]; then
-            tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的PHP网站源代码"
-            ! ask_if "确认并继续？(y/n)" && queren=0
-	    if [ $php_is_installed -eq 0 ]; then
+                tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的php网站源代码"
                 tyblue "安装自定义动态网站需要安装php"
-                yellow "编译&&安装php可能需要额外消耗15-60分钟"
-                yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
+                yellow "如果你没有安装nextcloud可在安装完后重新运行脚本选6安装PHP"
+				blue "  如果已安装则忽略"
                 ! ask_if "确定选择吗？(y/n)" && queren=0
-            fi
         elif [ $pretend -eq 5 ]; then
-            yellow "输入反向代理网址，格式如：\"https://v.qq.com\""
-            pretend=""
+                yellow "输入反向代理网址，格式如：\"https://v.qq.com\""
+                pretend=""
             while [ -z "$pretend" ]
             do
                 read -p "请输入反向代理网址：" pretend
             done
-        elif [ $pretend -eq 6 ]; then
-            tyblue "wordpress安装路径 \"${nginx_prefix}/html/$1\" "
-            ! ask_if "确认并继续？(y/n)" && queren=0
-        fi
-	    if [ $php_is_installed -eq 0 ]; then
+		elif [ $pretend -eq 6 ]; then
                 tyblue "安装wordpress需要安装php"
-                yellow "编译&&安装php可能需要额外消耗15-60分钟"
-                yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
+                yellow "如果你没有安装nextcloud可在安装完后重新运行脚本选6安装PHP"
+				blue "  如果已安装则忽略"
                 ! ask_if "确定选择吗？(y/n)" && queren=0
-            fi
+			fi
     done
 }
 readDomain()
@@ -3604,7 +3597,7 @@ install_check_update_update_php()
         systemctl -q is-active php-fpm && php_status=1
     else
         ask_update_script
-        tyblue "安装php用于运行nextcloud网盘"
+        tyblue "安装php用于运行nextcloud网盘、自定义PHP动态网站和wordpress"
         yellow "编译&&安装php可能需要消耗15-60分钟"
         yellow "且php将占用一定系统资源，不建议内存<512M的机器使用"
         ! ask_if "是否继续？(y/n)" && return 0
