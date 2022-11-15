@@ -1846,8 +1846,14 @@ readPretend()
                 ! ask_if "确定选择吗？(y/n)" && queren=0
             fi
         elif [ $pretend -eq 4 ]; then
-            tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的网站源代码"
+            tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的PHP网站源代码"
             ! ask_if "确认并继续？(y/n)" && queren=0
+	    if [ $php_is_installed -eq 0 ]; then
+                tyblue "安装自定义动态网站需要安装php"
+                yellow "编译&&安装php可能需要额外消耗15-60分钟"
+                yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
+                ! ask_if "确定选择吗？(y/n)" && queren=0
+            fi
         elif [ $pretend -eq 5 ]; then
             yellow "输入反向代理网址，格式如：\"https://v.qq.com\""
             pretend=""
@@ -1859,6 +1865,12 @@ readPretend()
             tyblue "wordpress安装路径 \"${nginx_prefix}/html/$1\" "
             ! ask_if "确认并继续？(y/n)" && queren=0
         fi
+	    if [ $php_is_installed -eq 0 ]; then
+                tyblue "安装wordpress需要安装php"
+                yellow "编译&&安装php可能需要额外消耗15-60分钟"
+                yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
+                ! ask_if "确定选择吗？(y/n)" && queren=0
+            fi
     done
 }
 readDomain()
