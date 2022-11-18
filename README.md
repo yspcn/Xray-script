@@ -15,7 +15,7 @@ apt install screen -y && yum install screen
 ```
 安装mariadb数据库脚本，修改“password”为你的密码，此处为mariadb的root密码
 ```
-screen -U wget -c http://mirrors.linuxeye.com/oneinstack-full.tar.gz && tar xzf oneinstack-full.tar.gz && ./oneinstack/install.sh --db_option 7 --dbinstallmethod 1 --dbrootpwd password --iptables && rm oneinstack-full.tar.gz
+screen -U wget -c https://github.com/yspcn/Xray-script/raw/main/mariadb.sh && bash mariadb.sh
 ```
 一键部署脚本
 ```
