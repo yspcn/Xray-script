@@ -19,7 +19,7 @@ wget -c https://github.com/yspcn/Xray-script/raw/main/mariadb.sh && bash mariadb
 ```
 一键部署脚本
 ```
-screen -U wget -O Xray-TLS+Web-setup.sh https://github.com/yspcn/Xray-script/raw/main/Xray-TLS%2BWeb-setup.sh && bash Xray-TLS+Web-setup.sh
+wget -O Xray-TLS+Web-setup.sh https://github.com/yspcn/Xray-script/raw/main/Xray-TLS%2BWeb-setup.sh && bash Xray-TLS+Web-setup.sh
 ```
 # Xray-TLS+Web搭建/管理脚本
 ## 目录
