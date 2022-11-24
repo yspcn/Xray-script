@@ -9,9 +9,7 @@ php降级为7.4.32，适合大多数php程序
 配合nps或frp可以反代https/http，https自动跳转到843端口，请放行
 nginx脚本默认加载套cf读取客户端真实ip
 自定义动态网站集成thinkPHP和Discuzd伪静态集合
-```
-```
-apt install screen -y && yum install screen
+
 ```
 安装mariadb数据库脚本，修改“password”为你的密码，此处为mariadb的root密码
 ```
