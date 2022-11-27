@@ -27,7 +27,7 @@ nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
 redis="5.3.7"
 
-php_version="php-8.1.12"
+php_version="php-7.4.33"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 unset php_is_installed
