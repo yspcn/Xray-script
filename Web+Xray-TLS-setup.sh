@@ -2750,7 +2750,7 @@ server {
 EOF
         if [ $protocol_2 -ne 0 ]; then
 cat >> $nginx_config<<EOF
-    location = /$serviceName {
+    location = /$serviceName/TunMulti {
         client_max_body_size 0;
         client_body_timeout 24h;
         keepalive_timeout 24h;
@@ -2760,7 +2760,7 @@ cat >> $nginx_config<<EOF
         lingering_close always;
         lingering_time 24h;
         lingering_timeout 24h;
-        grpc_pass unix:/dev/shm/xray/grpc.sock;
+        grpc_pass grpc://unix:/dev/shm/xray/grpc.sock;
     }
 EOF
         fi
