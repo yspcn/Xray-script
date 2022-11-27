@@ -3100,9 +3100,9 @@ let_init_nextcloud()
     tyblue " 1.自定义管理员的用户名和密码"
     tyblue " 2.数据库类型选择SQLite"
     tyblue " 3.建议不勾选\"安装推荐的应用\"，因为进去之后还能再安装"
-	crontab -l > ${domain_list[$1]}
-	echo "*/5 * * * * sudo -u www-data php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php &" >> ${domain_list[$1]}
-	crontab ${domain_list[$1]}
+	crontab -u www-data -l > ${domain_list[$1]}
+	echo "*/5 * * * * php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php &" >> ${domain_list[$1]}
+	crontab -u www-data ${domain_list[$1]}
 	rm ${domain_list[$1]}
     sleep 15s
 
