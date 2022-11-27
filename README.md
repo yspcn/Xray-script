@@ -17,7 +17,7 @@ wget -c https://github.com/yspcn/Xray-script/raw/main/mariadb.sh && bash mariadb
 ```
 一键部署nginx前置版脚本（推荐，暂时只测试vless+ws+tls/vless+grpc+tls,ip连接改443端口为10086）
 ```
-wget -O https://github.com/yspcn/Xray-script/raw/main/Web%2BXray-TLS-setup.sh && bash Xray-TLS+Web-setup.sh
+wget -O Web+Xray-TLS-setup.sh https://github.com/yspcn/Xray-script/raw/main/Web%2BXray-TLS-setup.sh && bash Web+Xray-TLS-setup.sh
 ```
 一键部署xray前置脚本
 ```
