@@ -1,15 +1,15 @@
 # 自定义动态网站,集成discuz伪静态，自动部署wordpress
 ```
-https://wordpress.org/latest.zip
-修改xray启用获取ip，启用xray日志，级别为警告
+wordpress下载地址https://wordpress.org/latest.zip为所有语言最新版，自行选择中文安装
+php安装自动增加redis和apcu拓展，
 修改nginx反代能读取ip，启用nginx日志
 添加自动部署wordpress
 添加自动部署nextcloud细节，脚本自动修改添加apcu缓存和默认电话地区，自动创建cron定时任务,注意安装提示
-php降级为7.4.32，适合大多数php程序
-配合nps或frp可以反代https/http，https自动跳转到843端口，请放行
+php降级为7.4.33，适合大多数php程序
+配合nps或frp可以反代https/http，https自动跳转到843端口，请放行，nps穿透ssl必须为843端口
 nginx脚本默认加载套cf读取客户端真实ip
 自定义动态网站集成thinkPHP和Discuzd伪静态集合
-
+。。。
 ```
 安装mariadb数据库脚本，修改“password”为你的密码，此处为mariadb的root密码
 ```
