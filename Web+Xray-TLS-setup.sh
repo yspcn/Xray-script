@@ -2351,8 +2351,6 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
-        fastcgi_param REMOTE_ADDR \$proxy_protocol_addr;
-        fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
         fastcgi_param front_controller_active true;
@@ -2387,8 +2385,6 @@ cat > ${nginx_prefix}/conf.d/wordpress.conf <<EOF
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
-        fastcgi_param REMOTE_ADDR \$proxy_protocol_addr;
-        fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
         fastcgi_param front_controller_active true;
@@ -2414,8 +2410,6 @@ cat > ${nginx_prefix}/conf.d/custom.conf <<EOF
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
-        fastcgi_param REMOTE_ADDR \$proxy_protocol_addr;
-        fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
         fastcgi_param front_controller_active true;
@@ -2478,9 +2472,9 @@ set_real_ip_from 2405:8100::/32;
 set_real_ip_from 2a06:98c0::/29;
 set_real_ip_from 2c0f:f248::/32;
 
-real_ip_recursive on;
+#real_ip_recursive on;
 #set_real_ip_from unix:;
-real_ip_header proxy_protocol;
+#real_ip_header proxy_protocol;
 EOF
     config_service_nginx
     systemctl enable nginx
@@ -2713,58 +2707,69 @@ cat >> $nginx_config<<EOF
 server {
     listen 80;
     listen [::]:80;
-    listen unix:/dev/shm/nginx/default.sock proxy_protocol;
-    listen unix:/dev/shm/nginx/h2.sock http2 proxy_protocol;
     server_name ${temp_domain_list2[@]};
     return 301 https://www.\$host\$request_uri;
 }
 EOF
     fi
-cat >> $nginx_config<<EOF
-server {
-    listen unix:/dev/shm/nginx/default.sock default_server proxy_protocol;
-    listen unix:/dev/shm/nginx/h2.sock http2 default_server proxy_protocol;
-    return 301 https://${domain_list[0]};
-}
-EOF
     for ((i=0;i<${#domain_list[@]};i++))
     do
 cat >> $nginx_config<<EOF
 server {
-    listen unix:/dev/shm/nginx/default.sock proxy_protocol;
-    listen unix:/dev/shm/nginx/h2.sock http2 proxy_protocol;
     server_name ${domain_list[$i]};
+	listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    ssl_certificate ${nginx_prefix}/certs/${domain_list[$i]}.cer;
+    ssl_certificate_key ${nginx_prefix}/certs/${domain_list[$i]}.key;
+    server_name ${domain_list[$i]};
+    ssl_protocols         TLSv1.3;
+    ssl_ecdh_curve        X25519:P-256:P-384:P-521; 
+    ssl_early_data on;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    ssl_prefer_server_ciphers on;
     add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload" always;
     include ${nginx_prefix}/conf.d/cloudflare.conf;
+	location $path {
+        proxy_redirect off;
+        proxy_pass http://unix:/dev/shm/xray/ws.sock;
+        proxy_http_version 1.1;
+        proxy_send_timeout 720m;
+        proxy_read_timeout 720m;
+        proxy_buffering off;
+        lingering_close always;
+        client_max_body_size 0;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$http_host;
+        # Config for 0-RTT in TLSv1.3
+        proxy_set_header Early-Data \$ssl_early_data;
+        }
 EOF
         if [ $protocol_2 -ne 0 ]; then
 cat >> $nginx_config<<EOF
-    #client_header_timeout 24h;
-    #ignore_invalid_headers off;
     location = /$serviceName {
         client_max_body_size 0;
         client_body_timeout 24h;
-        #keepalive_requests 1000;
-        #keepalive_time 24h;
         keepalive_timeout 24h;
         send_timeout 24h;
-        #grpc_buffer_size 0;
         grpc_read_timeout 24h;
         grpc_send_timeout 24h;
-        #grpc_socket_keepalive off;
         lingering_close always;
         lingering_time 24h;
         lingering_timeout 24h;
-        grpc_pass grpc://unix:/dev/shm/xray/grpc.sock;
+        grpc_pass unix:/dev/shm/xray/grpc.sock;
     }
 EOF
         fi
         if [ "${pretend_list[$i]}" == "1" ]; then
 cat >> $nginx_config<<EOF
     location / {
-        proxy_set_header X-Real-IP \$proxy_protocol_addr;
-        proxy_set_header X-Forwarded-For \$proxy_protocol_addr;
-        proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_protocol_addr;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_add_x_forwarded_for;
         proxy_set_header Host \$http_host;
         proxy_redirect off;
         proxy_pass http://unix:/dev/shm/cloudreve/cloudreve.sock;
@@ -2796,9 +2801,9 @@ cat >> $nginx_config<<EOF
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header X-Real-IP \$proxy_protocol_addr;
-        proxy_set_header X-Forwarded-For \$proxy_protocol_addr;
-        proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_protocol_addr;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_add_x_forwarded_for;
         proxy_pass ${pretend_list[$i]};
         proxy_set_header referer "${pretend_list[$i]}";
         error_page 500 502 503 504 https://${true_domain_list[$i]}:843\$request_uri;
@@ -2828,7 +2833,7 @@ cat > $xray_config <<EOF
     },
     "inbounds": [
         {
-            "port": 443,
+            "port": 10086,
             "protocol": "vless",
             "settings": {
 EOF
@@ -2848,19 +2853,17 @@ EOF
 cat >> $xray_config <<EOF
                     {
                         "path": "$path",
-                        "dest": "@/dev/shm/xray/ws.sock"
+                        "dest": "/dev/shm/xray/ws.sock"
                     },
 EOF
     fi
 cat >> $xray_config <<EOF
                     {
                         "alpn": "h2",
-                        "dest": "/dev/shm/nginx/h2.sock",
-                        "xver": 1
+                        "dest": "/dev/shm/nginx/h2.sock"
                     },
                     {
-                        "dest": "/dev/shm/nginx/default.sock",
-                        "xver": 1
+                        "dest": "/dev/shm/nginx/default.sock"
                     }
                 ]
             },
@@ -2923,7 +2926,7 @@ EOF
     if [ $protocol_3 -ne 0 ]; then
         echo '        },' >> $xray_config
         echo '        {' >> $xray_config
-        echo '            "listen": "@/dev/shm/xray/ws.sock",' >> $xray_config
+        echo '            "listen": "/dev/shm/xray/ws.sock",' >> $xray_config
         if [ $protocol_3 -eq 2 ]; then
             echo '            "protocol": "vmess",' >> $xray_config
         else
@@ -2957,7 +2960,18 @@ cat >> $xray_config <<EOF
         {
             "protocol": "freedom"
         }
-    ]
+    ],
+    "dns": {
+        "servers": [
+            "8.8.8.8",
+            "8.8.4.4",
+            "1.1.1.1",
+            "1.0.0.1",
+            "localhost",
+            "https+local://dns.google/dns-query",
+            "https+local://1.1.1.1/dns-query"
+        ]
+    }
 }
 EOF
 }
@@ -3100,9 +3114,9 @@ let_init_nextcloud()
     tyblue " 1.自定义管理员的用户名和密码"
     tyblue " 2.数据库类型选择SQLite"
     tyblue " 3.建议不勾选\"安装推荐的应用\"，因为进去之后还能再安装"
-	crontab -u www-data -l > ${domain_list[$1]}
-	echo "*/5 * * * * php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php &" >> ${domain_list[$1]}
-	crontab -u www-data ${domain_list[$1]}
+	crontab -l > ${domain_list[$1]}
+	echo "*/5 * * * * sudo -u www-data php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php &" >> ${domain_list[$1]}
+	crontab ${domain_list[$1]}
 	rm ${domain_list[$1]}
     sleep 15s
 
