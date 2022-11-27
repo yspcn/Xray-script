@@ -15,7 +15,11 @@ nginx脚本默认加载套cf读取客户端真实ip
 ```
 wget -c https://github.com/yspcn/Xray-script/raw/main/mariadb.sh && bash mariadb.sh
 ```
-一键部署脚本
+一键部署nginx前置版脚本（推荐，暂时只测试vless+ws+tls/vless+grpc+tls,ip连接改443端口为10086）
+```
+wget -O https://github.com/yspcn/Xray-script/raw/main/Web%2BXray-TLS-setup.sh && bash Xray-TLS+Web-setup.sh
+```
+一键部署xray前置脚本
 ```
 wget -O Xray-TLS+Web-setup.sh https://github.com/yspcn/Xray-script/raw/main/Xray-TLS%2BWeb-setup.sh && bash Xray-TLS+Web-setup.sh
 ```
