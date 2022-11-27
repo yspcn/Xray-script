@@ -2741,7 +2741,7 @@ EOF
 cat >> $nginx_config<<EOF
     #client_header_timeout 24h;
     #ignore_invalid_headers off;
-    location = /$serviceName/TunMulti {
+    location = /$serviceName {
         client_max_body_size 0;
         client_body_timeout 24h;
         #keepalive_requests 1000;
