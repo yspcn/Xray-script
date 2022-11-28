@@ -152,7 +152,7 @@ create_mysql()
 {
 mysql -e "CREATE DATABASE IF NOT EXISTS $mysql_user"
 
-green "创建用户$mysql_user并授予暂存数据库的所有权限..."
+green "创建用户\"$mysql_user\"并授予暂存数据库的所有权限..."
  
 mysql -e "CREATE USER IF NOT EXISTS '$mysql_user'@'localhost' IDENTIFIED BY '$mysql_password'"
  
