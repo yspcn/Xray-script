@@ -453,7 +453,7 @@ check_need_php()
     local i
     for i in "${pretend_list[@]}"
     do
-        [ "$i" == "2" ] && return 0
+        [ "$i" == "2" ] && return 0 || [ "$i" == "4" ] && return 0 || [ "$i" == "6" ] && return 0
     done
     return 1
 }
@@ -1149,7 +1149,7 @@ doupdate()
             if [ $in_install_update_xray_tls_web -eq 1 ]; then
                 echo
                 tyblue "提示：即将开始升级系统"
-                yellow " 升级完系统后服务器将重启，重启后，请再次运行脚本完成 Xray-TLS+Web 剩余部分的安装/升级"
+                yellow " 升级完系统后服务器将重启，重启后，请再次运行脚本完成 Web+Xray-TLS 剩余部分的安装/升级"
                 yellow " 再次运行脚本时，重复之前选过的选项即可"
                 echo
                 sleep 2s
@@ -1580,7 +1580,7 @@ install_bbr()
                     if [ $in_install_update_xray_tls_web -eq 1 ]; then
                         echo
                         tyblue "提示："
-                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Xray-TLS+Web 剩余部分的安装/升级"
+                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Web+Xray-TLS 剩余部分的安装/升级"
                         yellow " 再次运行脚本时，重复之前选过的选项即可"
                         echo
                         sleep 2s
@@ -1627,7 +1627,7 @@ install_bbr()
                     if [ $in_install_update_xray_tls_web -eq 1 ]; then
                         echo
                         tyblue "提示：开启bbr需要更换内核"
-                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Xray-TLS+Web 剩余部分的安装/升级"
+                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Web+Xray-TLS 剩余部分的安装/升级"
                         yellow " 再次运行脚本时，重复之前选过的选项即可"
                         echo
                         sleep 2s
@@ -1666,7 +1666,7 @@ install_bbr()
                 yellow " 重启后，请："
                 yellow "    1. 再次运行脚本，重复之前选过的选项"
                 yellow "    2. 到这一步时，再次选择这个选项完成 bbrplus/bbr魔改版/暴力bbr魔改版/锐速 剩余部分的安装"
-                yellow "    3. 选择 \"退出bbr安装\" 选项完成 Xray-TLS+Web 剩余部分的安装/升级"
+                yellow "    3. 选择 \"退出bbr安装\" 选项完成 Web+Xray-TLS 剩余部分的安装/升级"
             else
                 yellow " 重启后，请再次运行脚本并选择这个选项完成 bbrplus/bbr魔改版/暴力bbr魔改版/锐速 剩余部分的安装"
             fi
@@ -1803,14 +1803,14 @@ readPretend()
                 queren=0
             fi
         elif [ $pretend -eq 2 ]; then
-            if (([ $release == "centos" ] || [ $release == centos-stream ] || [ $release == oracle ]) && ! version_ge "$systemVersion" "8" ) || ([ $release == "rhel" ] && ! version_ge "$systemVersion" "8") || ([ $release == "fedora" ] && ! version_ge "$systemVersion" "30") || ([ $release == "ubuntu" ] && ! version_ge "$systemVersion" "20.04") || ([ $release == "debian" ] && ! version_ge "$systemVersion" "11"); then
+            if (([ $release == "centos" ] || [ $release == centos-stream ] || [ $release == oracle ]) && ! version_ge "$systemVersion" "8" ) || ([ $release == "rhel" ] && ! version_ge "$systemVersion" "8") || ([ $release == "fedora" ] && ! version_ge "$systemVersion" "30") || ([ $release == "ubuntu" ] && ! version_ge "$systemVersion" "20.04") || ([ $release == "debian" ] && ! version_ge "$systemVersion" "10"); then
                 red "系统版本过低，无法安装php！"
                 echo
                 tyblue "安装Nextcloud需要安装php"
                 yellow "仅支持在以下版本系统下安装php："
                 yellow " 1. Ubuntu 20.04+"
-                yellow " 2. Debian 11+"
-                yellow " 3. 其他以 Debian 11+ 为基的系统"
+                yellow " 2. Debian 10+"
+                yellow " 3. 其他以 Debian 10+ 为基的系统"
                 yellow " 4. Red Hat Enterprise Linux 8+"
                 yellow " 5. CentOS 8+"
                 yellow " 6. Fedora 30+"
@@ -1825,8 +1825,8 @@ readPretend()
                 tyblue "安装Nextcloud需要安装php"
                 yellow "仅支持在以下版本系统下安装php："
                 yellow " 1. Ubuntu 20.04+"
-                yellow " 2. Debian 11+"
-                yellow " 3. 其他以 Debian 11+ 为基的系统"
+                yellow " 2. Debian 10+"
+                yellow " 3. 其他以 Debian 10+ 为基的系统"
                 yellow " 4. Red Hat Enterprise Linux 8+"
                 yellow " 5. CentOS 8+"
                 yellow " 6. Fedora 30+"
@@ -1846,9 +1846,9 @@ readPretend()
                 ! ask_if "确定选择吗？(y/n)" && queren=0
             fi
         elif [ $pretend -eq 4 ]; then
-            tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的php网站源代码"
-            ! ask_if "确认并继续？(y/n)" && queren=0
 			if [ $php_is_installed -eq 0 ]; then
+                tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的php网站源代码"
+#                ! ask_if "确认并继续？(y/n)" && queren=0
                 tyblue "安装自定义动态网站需要安装php"
                 yellow "编译&&安装php可能需要额外消耗15-60分钟"
                 yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
@@ -1862,15 +1862,15 @@ readPretend()
                 read -p "请输入反向代理网址：" pretend
             done
         elif [ $pretend -eq 6 ]; then
-            tyblue "wordpress安装路径 \"${nginx_prefix}/html/$1\" "
-            ! ask_if "确认并继续？(y/n)" && queren=0
-        fi
-		if [ $php_is_installed -eq 0 ]; then
+			if [ $php_is_installed -eq 0 ]; then
+                tyblue "wordpress安装路径 \"${nginx_prefix}/html/$1\" "
+#                ! ask_if "确认并继续？(y/n)" && queren=0
                 tyblue "安装wordpress需要安装php"
                 yellow "编译&&安装php可能需要额外消耗15-60分钟"
                 yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
                 ! ask_if "确定选择吗？(y/n)" && queren=0
             fi
+        fi
     done
 }
 readDomain()
@@ -3462,7 +3462,7 @@ install_update_xray_tls_web()
     fi
 
     if [ $update -eq 0 ]; then
-        green "即将开始安装Xray-TLS+Web，可能需要10-20分钟。。。"
+        green "即将开始安装Web+Xray-TLS，可能需要10-20分钟。。。"
         sleep 3s
     fi
 
@@ -3569,14 +3569,14 @@ install_check_update_update_php()
     check_SELinux
     check_important_dependence_installed tzdata tzdata
     get_system_info
-    if (([ $release == "centos" ] || [ $release == centos-stream ] || [ $release == oracle ]) && ! version_ge "$systemVersion" "8" ) || ([ $release == "rhel" ] && ! version_ge "$systemVersion" "8") || ([ $release == "fedora" ] && ! version_ge "$systemVersion" "30") || ([ $release == "ubuntu" ] && ! version_ge "$systemVersion" "20.04") || ([ $release == "debian" ] && ! version_ge "$systemVersion" "11"); then
+    if (([ $release == "centos" ] || [ $release == centos-stream ] || [ $release == oracle ]) && ! version_ge "$systemVersion" "8" ) || ([ $release == "rhel" ] && ! version_ge "$systemVersion" "8") || ([ $release == "fedora" ] && ! version_ge "$systemVersion" "30") || ([ $release == "ubuntu" ] && ! version_ge "$systemVersion" "20.04") || ([ $release == "debian" ] && ! version_ge "$systemVersion" "10"); then
         red "系统版本过低，无法安装php！"
         echo
         tyblue "安装Nextcloud需要安装php"
         yellow "仅支持在以下版本系统下安装php："
         yellow " 1. Ubuntu 20.04+"
-        yellow " 2. Debian 11+"
-        yellow " 3. 其他以 Debian 11+ 为基的系统"
+        yellow " 2. Debian 10+"
+        yellow " 3. 其他以 Debian 10+ 为基的系统"
         yellow " 4. Red Hat Enterprise Linux 8+"
         yellow " 5. CentOS 8+"
         yellow " 6. Fedora 30+"
@@ -3589,8 +3589,8 @@ install_check_update_update_php()
         tyblue "安装Nextcloud需要安装php"
         yellow "仅支持在以下版本系统下安装php："
         yellow " 1. Ubuntu 20.04+"
-        yellow " 2. Debian 11+"
-        yellow " 3. 其他以 Debian 11+ 为基的系统"
+        yellow " 2. Debian 10+"
+        yellow " 3. 其他以 Debian 10+ 为基的系统"
         yellow " 4. Red Hat Enterprise Linux 8+"
         yellow " 5. CentOS 8+"
         yellow " 6. Fedora 30+"
@@ -4097,7 +4097,7 @@ change_xray_path()
 simplify_system()
 {
     if systemctl -q is-active xray || systemctl -q is-active nginx || systemctl -q is-active php-fpm; then
-        yellow "请先停止Xray-TLS+Web"
+        yellow "请先停止Web+Xray-TLS"
         return 1
     fi
     [ "$dnf" == "yum" ] && check_important_dependence_installed "" "yum-utils"
@@ -4106,7 +4106,7 @@ simplify_system()
     check_important_dependence_installed "procps" "procps-ng"
     yellow "警告："
     tyblue " 1. 此功能可能导致某些VPS无法开机，请谨慎使用"
-    tyblue " 2. 如果VPS上部署了 Xray-TLS+Web 以外的东西，可能被误删"
+    tyblue " 2. 如果VPS上部署了 Web+Xray-TLS 以外的东西，可能被误删"
     ! ask_if "是否要继续?(y/n)" && return 0
     echo
     yellow "提示：在精简系统前请先设置apt/yum/dnf的软件源为http/ftp而非https/ftps"
@@ -4226,7 +4226,7 @@ start_menu()
     local cloudreve_status
     [ $cloudreve_is_installed -eq 1 ] && cloudreve_status="\\033[32m已安装" || cloudreve_status="\\033[31m未安装"
     systemctl -q is-active cloudreve && cloudreve_status+="                \\033[32m运行中" || cloudreve_status+="                \\033[31m未运行"
-    tyblue "------------------------ Xray-TLS+Web 搭建/管理脚本 ------------------------"
+    tyblue "------------------------ Web+Xray-TLS 搭建/管理脚本 ------------------------"
     echo
     tyblue "           Xray   ：           ${xray_status}"
     echo
@@ -4248,12 +4248,12 @@ start_menu()
     echo
     tyblue " -----------安装/更新/卸载-----------"
     if [ $is_installed -eq 0 ]; then
-        green  "   1. 安装Xray-TLS+Web"
+        green  "   1. 安装Web+Xray-TLS"
     else
-        green  "   1. 重新安装Xray-TLS+Web"
+        green  "   1. 重新安装Web+Xray-TLS"
     fi
     purple "         流程：[更新系统组件]->[安装bbr]->[安装php]->安装Nginx->安装Xray->申请证书->配置文件->[安装/配置Cloudreve]"
-    green  "   2. 更新Xray-TLS+Web"
+    green  "   2. 更新Web+Xray-TLS"
     purple "         流程：更新脚本->[更新系统组件]->[更新bbr]->[更新php]->[更新Nginx]->更新Xray->更新证书->更新配置文件->[更新Cloudreve]"
     tyblue "   3. 检查更新/更新脚本"
     tyblue "   4. 更新系统组件"
@@ -4263,13 +4263,13 @@ start_menu()
     tyblue "   7. 检查更新/更新Nginx"
     tyblue "   8. 更新Cloudreve"
     tyblue "   9. 更新Xray"
-    red    "  10. 卸载Xray-TLS+Web"
+    red    "  10. 卸载Web+Xray-TLS"
     red    "  11. 卸载php"
     red    "  12. 卸载Cloudreve"
     echo
     tyblue " --------------启动/停止-------------"
-    tyblue "  13. 启动/重启Xray-TLS+Web"
-    tyblue "  14. 停止Xray-TLS+Web"
+    tyblue "  13. 启动/重启Web+Xray-TLS"
+    tyblue "  14. 停止Web+Xray-TLS"
     echo
     tyblue " ----------------管理----------------"
     tyblue "  15. 查看配置信息"
@@ -4287,7 +4287,7 @@ start_menu()
     echo
     tyblue " ----------------其它----------------"
     tyblue "  25. 精简系统"
-    purple "         删除不必要的系统组件，即使已经安装 Xray-TLS+Web 仍然可以使用此功能"
+    purple "         删除不必要的系统组件，即使已经安装 Web+Xray-TLS 仍然可以使用此功能"
     tyblue "  26. 尝试修复退格键无法使用的问题"
     purple "         部分ssh工具(如Xshell)可能有这类问题"
     tyblue "  27. 修改dns"
@@ -4300,11 +4300,11 @@ start_menu()
         read -p "您的选择是：" choice
     done
     if (( choice==2 || (7<=choice&&choice<=9) || choice==13 || (15<=choice&&choice<=24) )) && [ $is_installed -eq 0 ]; then
-        red "请先安装Xray-TLS+Web！！"
+        red "请先安装Web+Xray-TLS！！"
         return 1
     fi
     if (( 17<=choice&&choice<=20 )) && ! (systemctl -q is-active nginx && systemctl -q is-active xray); then
-        red "请先启动Xray-TLS+Web！！"
+        red "请先启动Web+Xray-TLS！！"
         return 1
     fi
     if [ $choice -eq 1 ]; then
