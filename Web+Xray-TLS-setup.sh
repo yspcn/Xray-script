@@ -2180,6 +2180,7 @@ cat >> ${php_prefix}/etc/php.ini << EOF
 extension=imagick.so
 zend_extension=opcache.so
 opcache.enable=1
+opcache.interned_strings_buffer=16
 date.timezone=$timezone
 extension=apcu.so
 extension=redis.so
