@@ -129,7 +129,7 @@ red "安装和配置mariadb..."
         colorEcho $RED "Not support OS!"
         exit 1
     fi
-   if [[ ${PACKAGE_MANAGER} == 'dnf';then
+   if [[ ${PACKAGE_MANAGER} == 'dnf' ]];then
       ${PACKAGE_MANAGER} module install mariadb -y 
     elif ${PACKAGE_MANAGER} == 'yum' ]];then
       ${PACKAGE_MANAGER} install mariadb -y
