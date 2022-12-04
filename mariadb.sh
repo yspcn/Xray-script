@@ -119,7 +119,25 @@ install_mysql()
 { 
 if ! [ -x "$(command -v mysql)" ]; then
 red "安装和配置mariadb..."
-dnf module install mariadb -y || apt update && apt install mariadb-server -y
+    if [[ `command -v apt-get` ]];then
+        PACKAGE_MANAGER='apt-get'
+    elif [[ `command -v dnf` ]];then
+        PACKAGE_MANAGER='dnf'
+    elif [[ `command -v yum` ]];then
+        PACKAGE_MANAGER='yum'
+    else
+        colorEcho $RED "Not support OS!"
+        exit 1
+    fi
+   if [[ ${PACKAGE_MANAGER} == 'dnf';then
+      ${PACKAGE_MANAGER} module install mariadb -y 
+    else ${PACKAGE_MANAGER} == 'yum' ]];then
+      ${PACKAGE_MANAGER} install mariadb -y
+    else
+      ${PACKAGE_MANAGER} update
+      ${PACKAGE_MANAGER} install mariadb-server -y
+   fi
+systemctl daemon-reload
 systemctl enable mariadb
 systemctl start mariadb
 else
