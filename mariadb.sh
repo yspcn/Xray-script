@@ -131,7 +131,7 @@ red "安装和配置mariadb..."
     fi
    if [[ ${PACKAGE_MANAGER} == 'dnf';then
       ${PACKAGE_MANAGER} module install mariadb -y 
-    else ${PACKAGE_MANAGER} == 'yum' ]];then
+    elif ${PACKAGE_MANAGER} == 'yum' ]];then
       ${PACKAGE_MANAGER} install mariadb -y
     else
       ${PACKAGE_MANAGER} update
