@@ -241,5 +241,6 @@ send \"y\r\"
 expect eof
 ")
 echo "$SECURE_MYSQL"
+systemctl restart mariadb
 }
 start_menu
