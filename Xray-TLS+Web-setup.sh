@@ -2786,16 +2786,17 @@ EOF
 cat >> $nginx_config<<EOF
     location / {
         client_max_body_size 64m;
-        proxy_set_header Host  \$http_host;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300s;
+        proxy_pass ${pretend_list[$i]};
+        proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header X-Real-IP \$proxy_protocol_addr;
-        proxy_set_header X-Forwarded-For \$proxy_protocol_addr;
-        proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_protocol_addr;
-        proxy_pass ${pretend_list[$i]};
-        proxy_set_header referer "${pretend_list[$i]}";
-        error_page 500 502 503 504 https://${true_domain_list[$i]}:843\$request_uri;
+        proxy_set_header Host  \$http_host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        error_page 502 https://\$host:843\$request_uri;
     }
 EOF
         fi
