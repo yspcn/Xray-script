@@ -75,6 +75,7 @@ while [[ ! "$choice" =~ ^(0|[1-4][0-4]*)$ ]] || ((choice>5))
             read -p "您的选择是：" choice
         done
     if [ $choice -eq 1 ]; then
+        if ! [ -x "$(command -v mysql)" ]; then
 	root_password=""
 	while [ -z "$root_password" ]
             do
@@ -82,7 +83,12 @@ while [[ ! "$choice" =~ ^(0|[1-4][0-4]*)$ ]] || ((choice>5))
             done
 	! ask_if "数据库root密码是\"$root_password\"确定吗？(y/n)" && return 0
         install_mysql
+	config_mysql
+	mysql_secure
         initialization_mysql
+	else
+	red "检测到mariadb已安装"
+	fi
     elif [ $choice -eq 2 ]; then
 	mysql_user=""
         while [ -z "$mysql_user" ]
