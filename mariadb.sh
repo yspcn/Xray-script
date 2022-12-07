@@ -135,12 +135,12 @@ red "安装和配置mariadb..."
         red "Not support OS!"
         exit 1
     fi
-   if [[ ${PACKAGE_MANAGER} == 'dnf' ]];then
-      ${PACKAGE_MANAGER} module install mariadb -y | ${PACKAGE_MANAGER} install expect -y
-    elif ${PACKAGE_MANAGER} == 'yum' ]];then
-      ${PACKAGE_MANAGER} install mariadb expect -y
-    else
+   if [[ ${PACKAGE_MANAGER} == 'apt-get' ]];then      
       ${PACKAGE_MANAGER} update
+      ${PACKAGE_MANAGER} install mariadb-server expect -y
+    elif ${PACKAGE_MANAGER} == 'yum' ]];then
+      ${PACKAGE_MANAGER} install mariadb-server expect -y
+    else
       ${PACKAGE_MANAGER} install mariadb-server expect -y
    fi
 systemctl daemon-reload
