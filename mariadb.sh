@@ -215,7 +215,7 @@ collation_server       = utf8mb4_unicode_ci
 # Import all .cnf files from configuration directory
 !includedir /etc/mysql/mariadb.conf.d/
 bind-address=127.0.0.1
-innodb_read_only_compressed=OFF
+# innodb_read_only_compressed=OFF
 innodb_flush_log_at_trx_commit = 2
 [mariadb]
 userstat = 1
