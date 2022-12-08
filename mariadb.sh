@@ -138,7 +138,7 @@ red "安装和配置mariadb..."
    if [[ ${PACKAGE_MANAGER} == 'apt-get' ]];then      
       ${PACKAGE_MANAGER} update
       ${PACKAGE_MANAGER} install mariadb-server expect -y
-    elif ${PACKAGE_MANAGER} == 'yum' ]];then
+    elif [[ ${PACKAGE_MANAGER} == 'yum' ]];then
       ${PACKAGE_MANAGER} install mariadb-server expect -y
     else
       ${PACKAGE_MANAGER} install mariadb-server expect -y
@@ -192,10 +192,10 @@ mysql -e "FLUSH PRIVILEGES"
 delete_database()
 { 
 red "删除数据库..."
- 
-mysql -e "DROP DATABASE IF EXISTS $database_name"
+mysql -e "DROP DATABASE IF EXISTS '$database_name'@'localhost'"
+mysql -e "DROP DATABASE IF EXISTS '$database_name@'$(hostname)'"
 mysql -e "DROP USER IF EXISTS '$database_name'@'localhost'"
-mysql -e "FLUSH PRIVILEGES"
+mysql -e "DROP USER IF EXISTS '$database_name'@'$(hostname)'"
 }
 
 config_mysql() {
