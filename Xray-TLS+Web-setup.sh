@@ -2475,6 +2475,7 @@ set_real_ip_from 2c0f:f248::/32;
 real_ip_recursive on;
 #set_real_ip_from unix:;
 real_ip_header proxy_protocol;
+real_ip_header CF-Connecting-IP;
 EOF
     config_service_nginx
     systemctl enable nginx
