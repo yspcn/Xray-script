@@ -2448,7 +2448,7 @@ location / {
   if (-f \$request_filename/index.php){
     rewrite (.*) \$1/index.php;
   }
-  if (!-f $request_filename){
+  if (!-f \$request_filename){
     rewrite (.*) /index.php;
   }
 }
@@ -2693,17 +2693,17 @@ config_nginx()
     config_nginx_init
     local i
 cat > $nginx_config<<EOF
-server {
-    listen 80 reuseport default_server;
-    listen [::]:80 reuseport default_server;
-    return 301 https://${domain_list[0]};
-}
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${domain_list[@]};
-    return 301 https://\$host\$request_uri;
-}
+#server {
+#    listen 80 reuseport default_server;
+#    listen [::]:80 reuseport default_server;
+#    return 301 https://${domain_list[0]};
+#}
+#server {
+#    listen 80;
+#    listen [::]:80;
+#    server_name ${domain_list[@]};
+#    return 301 https://\$host\$request_uri;
+#}
 EOF
     local temp_domain_list2=()
     for i in "${!domain_config_list[@]}"
@@ -2712,12 +2712,12 @@ EOF
     done
     if [ ${#temp_domain_list2[@]} -ne 0 ]; then
 cat >> $nginx_config<<EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${temp_domain_list2[@]};
-    return 301 https://www.\$host\$request_uri;
-}
+#server {
+#    listen 80;
+#    listen [::]:80;
+#    server_name ${temp_domain_list2[@]};
+#    return 301 https://www.\$host\$request_uri;
+#}
 EOF
     fi
     for ((i=0;i<${#domain_list[@]};i++))
@@ -2725,8 +2725,13 @@ EOF
 cat >> $nginx_config<<EOF
 server {
     server_name ${domain_list[$i]};
+    listen 80;
+    listen [::]:80;
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
+    if (\$server_port !~ 443){
+        rewrite ^(/.*)$ https://\$host\$1 permanent;
+    }
     ssl_certificate ${nginx_prefix}/certs/${domain_list[$i]}.cer;
     ssl_certificate_key ${nginx_prefix}/certs/${domain_list[$i]}.key;
     server_name ${domain_list[$i]};
@@ -3296,13 +3301,13 @@ auto_install_nextcloud() {
 EOF
 }
 add_nextcloud_config() {
-    chmod -R 0755 ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
-    sed -i '$d' ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+	chmod -R 0755 ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+	sed -i '$d' ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'default_phone_region' => 'CN'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'default_language' => 'zh_CN'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'default_locale' => 'zh'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'memcache.local' => '\\OC\\Memcache\\APCu'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
-    echo ");" >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+	echo ");" >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
 }
 #初始化nextcloud 参数 1:域名在列表中的位置
 let_init_nextcloud()
