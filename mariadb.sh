@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #定义几个颜色
 purple()                           #基佬紫
 {
@@ -66,22 +67,23 @@ tyblue " 1. 安装并初始化mariadb"
 tyblue " 2. 添加数据库和数据库用户并赋予所有权限"
 tyblue " 3. 删除数据库,输入数据库名后无确认，谨慎！"
 tyblue " 4. 允许root账户登录mariadb，不安全谨慎操作"
+green  " 5. 创建管理员账户，非root"
 red    " 0. 退出脚本"
 echo
 echo
 local choice=""
-while [[ ! "$choice" =~ ^(0|[1-4][0-4]*)$ ]] || ((choice>5))
+while [[ ! "$choice" =~ ^(0|[1-5][0-5]*)$ ]] || ((choice>6))
         do
             read -p "您的选择是：" choice
         done
     if [ $choice -eq 1 ]; then
         if ! [ -x "$(command -v mysql)" ]; then
 	root_password=""
-	while [ -z "$root_password" ]
+	while [ -z "${root_password}" ]
             do
                 read -p "请输入root密码：" root_password
             done
-	! ask_if "数据库root密码是\"$root_password\"确定吗？(y/n)" && return 0
+	! ask_if "数据库root密码是\"${root_password}\"确定吗？(y/n)" && return 0
         install_mysql
 	config_mysql
 	mysql_secure
@@ -90,19 +92,29 @@ while [[ ! "$choice" =~ ^(0|[1-4][0-4]*)$ ]] || ((choice>5))
 	red "检测到mariadb已安装"
 	fi
     elif [ $choice -eq 2 ]; then
+	root_password=""
+	while [ -z "${root_password}" ]
+            do
+                read -p "请输入mysql root密码：" root_password
+            done
 	mysql_user=""
-        while [ -z "$mysql_user" ]
+        while [ -z "${mysql_user}" ]
         do
         read -p "请输入mysql普通用户/数据库名:" mysql_user
         done
         mysql_password=""
-        while [ -z "$mysql_password" ]
+        while [ -z "${mysql_password}" ]
         do
         read -p "请输入mysql普通用户密码:" mysql_password
         done
-	! ask_if "数据库/用户\"$mysql_user\"密码\"$mysql_password\"确定吗？(y/n)" && return 0
+	! ask_if "数据库/用户\"${mysql_user}\"密码\"${mysql_password}\"确定吗？(y/n)" && return 0
 	    create_mysql
     elif [ $choice -eq 3 ]; then
+	root_password=""
+	while [ -z "${root_password}" ]
+            do
+                read -p "请输入mysql root密码：" root_password
+            done
 	mysql_user=""
         while [ -z "$database_name" ]
         do
@@ -112,12 +124,29 @@ while [[ ! "$choice" =~ ^(0|[1-4][0-4]*)$ ]] || ((choice>5))
 	    delete_database
 	elif [ $choice -eq 4 ]; then
 	root_password=""
-	while [ -z "$root_password" ]
+	while [ -z "${root_password}" ]
             do
                 read -p "请输入root密码：" root_password
             done
 	! ask_if "确定运行root用户登陆mysql吗？(y/n)" && return 0
 	    allow_root_access
+	elif [ $choice -eq 5 ]; then
+	root_password=""
+        while [ -z "${root_password}" ]
+            do
+                read -p "请输入root密码：" root_password
+            done
+        while [ -z "${mysql_user}" ]
+        do
+        read -p "请输入mysql管理员用户名:" mysql_user
+        done
+        mysql_password=""
+        while [ -z "${mysql_password}" ]
+        do
+        read -p "请输入mysql管理员用户密码:" mysql_password
+        done
+	! ask_if "确定以用户\"${mysql_user}\"密码\"${mysql_password}\"管理mysql吗？(y/n)" && return 0
+	    mysql_new_admin
 	fi	
 }
 
@@ -125,12 +154,12 @@ install_mysql()
 { 
 if ! [ -x "$(command -v mysql)" ]; then
 red "安装和配置mariadb..."
-    if [[ `command -v apt-get` ]];then
+    if [[ -x "$(command -v apt-get)" ]];then
         PACKAGE_MANAGER='apt-get'
-    elif [[ `command -v dnf` ]];then
-        PACKAGE_MANAGER='dnf'
-    elif [[ `command -v yum` ]];then
+    elif [[ -x "$(command -v yum)" ]];then
         PACKAGE_MANAGER='yum'
+    elif [[ -x "$(command -v dnf)" ]];then
+        PACKAGE_MANAGER='dnf'
     else
         red "Not support OS!"
         exit 1
@@ -155,7 +184,7 @@ fi
 initialization_mysql()
 {
 red "初始化mysql,确保没有密码，任何人都无法访问mysql服务器"
-mysql -e "UPDATE mysql.user SET Password = PASSWORD('$root_password') WHERE User = 'root'"
+mysql -e "UPDATE mysql.user SET Password = PASSWORD('${root_password}') WHERE User = 'root'"
  
 # Kill the anonymous users
 mysql -e "DROP USER IF EXISTS ''@'localhost'"
@@ -165,7 +194,7 @@ mysql -e "DROP USER IF EXISTS ''@'$(hostname)'"
 mysql -e "DROP DATABASE IF EXISTS test"
 } 
  
-#red "正在创建\"$mysql_user\"数据库..."
+#red "正在创建\"${mysql_user}\"数据库..."
  
 #mysql -e "CREATE DATABASE IF NOT EXISTS staging"
  
@@ -174,31 +203,32 @@ mysql -e "DROP DATABASE IF EXISTS test"
 #mysql -e "CREATE DATABASE IF NOT EXISTS production"
 create_mysql() 
 {
-mysql -e "CREATE DATABASE IF NOT EXISTS $mysql_user"
+mysql -uroot -p${root_password} -e "CREATE DATABASE IF NOT EXISTS ${mysql_user}"
 
-green "创建用户\"$mysql_user\"并授予暂存数据库的所有权限..."
+green "创建用户\"${mysql_user}\"并授予暂存数据库的所有权限..."
  
-mysql -e "CREATE USER IF NOT EXISTS '$mysql_user'@'localhost' IDENTIFIED BY '$mysql_password'"
+mysql -uroot -p${root_password} -e "CREATE USER IF NOT EXISTS '${mysql_user}'@'localhost' IDENTIFIED BY '${mysql_password}'"
  
-mysql -e "GRANT ALL PRIVILEGES ON $mysql_user.* to '$mysql_user'@'localhost'"
+mysql -uroot -p${root_password} -e "GRANT ALL PRIVILEGES ON ${mysql_user}.* to '${mysql_user}'@'localhost'"
 
-mysql -e "FLUSH PRIVILEGES"
+mysql -uroot -p${root_password} -e "FLUSH PRIVILEGES"
 }
 allow_root_access()
 {
-mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$root_password' WITH GRANT OPTION"
-mysql -e "FLUSH PRIVILEGES"
+mysql -uroot -p${root_password} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${root_password}' WITH GRANT OPTION"
+mysql -uroot -p${root_password} -e "FLUSH PRIVILEGES"
 }
 delete_database()
 { 
 red "删除数据库..."
-mysql -e "DROP DATABASE IF EXISTS '$database_name'@'localhost'"
-mysql -e "DROP DATABASE IF EXISTS '$database_name@'$(hostname)'"
-mysql -e "DROP USER IF EXISTS '$database_name'@'localhost'"
-mysql -e "DROP USER IF EXISTS '$database_name'@'$(hostname)'"
+mysql -uroot -p${root_password} -e "DROP DATABASE IF EXISTS $database_name"
+#mysql -uroot -p${root_password} -e "DROP DATABASE IF EXISTS '$database_name@'$(hostname)'"
+mysql -uroot -p${root_password} -e "DROP USER IF EXISTS '$database_name'@'localhost'"
+mysql -uroot -p${root_password} -e "DROP USER IF EXISTS '$database_name'@'$(hostname)'"
 }
 
 config_mysql() {
+if [[ ${PACKAGE_MANAGER} == 'apt-get' ]];then
     cat > '/etc/mysql/my.cnf' << EOF
 # MariaDB-specific config file.
 # Read by /etc/mysql/my.cnf
@@ -224,6 +254,7 @@ log_error=/var/log/mysql/mariadb.err
 # ssl_cert = /etc/certs/${domain}_ecc/fullchain.cer
 # ssl_key = /etc/certs/${domain}_ecc/${domain}.key
 EOF
+fi
 }
 
 mysql_secure() {
@@ -248,5 +279,10 @@ expect eof
 ")
 echo "$SECURE_MYSQL"
 systemctl restart mariadb
+}
+mysql_new_admin() {
+mysql -uroot -p${root_password} -e "CREATE USER IF NOT EXISTS '${mysql_user}'@'localhost' IDENTIFIED BY '${mysql_password}'"
+mysql -uroot -p${root_password} -e "GRANT ALL PRIVILEGES ON *.* to '${mysql_user}'@'localhost'"
+mysql -uroot -p${root_password} -e "FLUSH PRIVILEGES"
 }
 start_menu
