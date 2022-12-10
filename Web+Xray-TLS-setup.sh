@@ -25,19 +25,26 @@ nginx_prefix="/usr/local/nginx"
 nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
 nginx_is_installed=""
-redis="5.3.7"
-
-php_version="php-7.4.33"
+redis="$(curl -H 'Cache-Control: no-cache' -s "https://api.github.com/repos/phpredis/phpredis/releases/latest" | grep 'tag_name' | cut -d\" -f4)"
+    if [[ ! -n "$redis" ]]; then
+        redis=5.3.7
+    fi
+apcu="$(curl -H 'Cache-Control: no-cache' -s "https://api.github.com/repos/krakjoe/apcu/releases/latest" | grep tag_name | sed -E 's/.*"v(.*)".*/\1/')"
+    if [[ ! -n "$apcu" ]]; then
+        apcu=5.1.22
+    fi
+	
+php_version="php-8.1.13"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 unset php_is_installed
 
-cloudreve_version="3.5.3"
+cloudreve_version="$(curl -H 'Cache-Control: no-cache' -s "https://api.github.com/repos/cloudreve/Cloudreve/releases/latest" | grep 'tag_name' | cut -d\" -f4)"
 cloudreve_prefix="/usr/local/cloudreve"
 cloudreve_service="/etc/systemd/system/cloudreve.service"
 unset cloudreve_is_installed
 
-nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-24.0.7.zip"
+nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-25.0.2.zip"
 
 xray_config="/usr/local/etc/xray/config.json"
 unset xray_is_installed
@@ -453,7 +460,7 @@ check_need_php()
     local i
     for i in "${pretend_list[@]}"
     do
-        [ "$i" == "2" ] && return 0 || [ "$i" == "4" ] && return 0 || [ "$i" == "6" ] && return 0
+        ([ "$i" == "2" ] || [ "$i" == "4" ] || [ "$i" == "6" ]) && return 0
     done
     return 1
 }
@@ -1700,7 +1707,7 @@ readProtocolConfig()
 {
     echo -e "\\n\\n\\n"
     tyblue "---------------------请选择传输层协议---------------------"
-    tyblue " 1. TCP"
+#    tyblue " 1. TCP nginx前置版此功能失效"
     tyblue " 2. gRPC"
     tyblue " 3. WebSocket"
     tyblue " 4. TCP + gRPC"
@@ -2084,13 +2091,13 @@ instal_php_imagick()
 }
 instal_php_apcu()
 {
-    if ! wget http://pecl.php.net/get/apcu-5.1.22.tgz; then
+    if ! wget http://pecl.php.net/get/apcu-${apcu}.tgz; then
         yellow "获取php-apcu源码失败"
         yellow "按回车键继续或者按Ctrl+c终止"
         read -s
     fi
-    tar -zvxf apcu-5.1.22.tgz
-    cd apcu-5.1.22
+    tar -zvxf apcu-${apcu}.tgz
+    cd apcu-${apcu}
     ${php_prefix}/bin/phpize
     ./configure --with-php-config=${php_prefix}/bin/php-config
     swap_on 380
@@ -2107,8 +2114,8 @@ instal_php_apcu()
     fi
 #    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
     cd ..
-    rm -f apcu-5.1.22.tgz
-    rm -rf apcu-5.1.22
+    rm -f apcu-${apcu}.tgz
+    rm -rf apcu-${apcu}
 }
 instal_php_redis()
 {
@@ -2475,7 +2482,7 @@ set_real_ip_from 2c0f:f248::/32;
 
 #real_ip_recursive on;
 #set_real_ip_from unix:;
-#real_ip_header proxy_protocol;
+real_ip_header CF-Connecting-IP;
 EOF
     config_service_nginx
     systemctl enable nginx
@@ -2582,8 +2589,8 @@ http {
     default_type  application/octet-stream;
 
     log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-                      '\$status \$body_bytes_sent "\$http_referer" '
-                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+#                      '\$status \$body_bytes_sent "\$http_referer" '
+#                      '"\$http_user_agent" "\$http_x_forwarded_for"';
 
     access_log  logs/access.log  main;
 
@@ -2718,7 +2725,7 @@ EOF
 cat >> $nginx_config<<EOF
 server {
     server_name ${domain_list[$i]};
-	listen 443 ssl http2;
+    listen 443 ssl http2;
     listen [::]:443 ssl http2;
     ssl_certificate ${nginx_prefix}/certs/${domain_list[$i]}.cer;
     ssl_certificate_key ${nginx_prefix}/certs/${domain_list[$i]}.key;
@@ -2798,16 +2805,17 @@ EOF
 cat >> $nginx_config<<EOF
     location / {
         client_max_body_size 64m;
-        proxy_set_header Host  \$http_host;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300s;
+        proxy_pass ${pretend_list[$i]};
+        proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
+        proxy_set_header Host  \$http_host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header HTTP_X_FORWARDED_FOR \$proxy_add_x_forwarded_for;
-        proxy_pass ${pretend_list[$i]};
-        proxy_set_header referer "${pretend_list[$i]}";
-        error_page 500 502 503 504 https://${true_domain_list[$i]}:843\$request_uri;
+        proxy_set_header X-Forwarded-Proto https;
+        error_page 502 https://\$host:843\$request_uri;
     }
 EOF
         fi
@@ -3008,6 +3016,8 @@ init_web()
     elif [ "${pretend_list[$1]}" == "4" ]; then
         mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
         turn_on_off_php
+		systemctl start php-fpm
+        systemctl enable php-fpm
         turn_on_off_cloudreve
     elif [ "${pretend_list[$1]}" == "6" ]; then
        if ! wget -O "${nginx_prefix}/html/latest.zip" https://wordpress.org/latest.zip ; then
@@ -3020,6 +3030,7 @@ init_web()
         rm -f "${nginx_prefix}/html/latest.zip"
         mv "${nginx_prefix}/html/wordpress" "${nginx_prefix}/html/${true_domain_list[$1]}"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
+		turn_on_off_php
         systemctl start php-fpm
         systemctl enable php-fpm
         turn_on_off_cloudreve
@@ -3106,78 +3117,247 @@ install_init_cloudreve()
     read -s
     cloudreve_is_installed=1
 }
-
-#初始化nextcloud 参数 1:域名在列表中的位置
-let_init_nextcloud()
-{
-    echo -e "\\n\\n"
-    yellow "请立即打开\"https://${domain_list[$1]}\"进行Nextcloud初始化设置："
-    tyblue " 1.自定义管理员的用户名和密码"
-    tyblue " 2.数据库类型选择SQLite"
-    tyblue " 3.建议不勾选\"安装推荐的应用\"，因为进去之后还能再安装"
+nextcloud_crontab(){
+	if ! [ -x "$(command -v sudo)" ]; then
+	crontab -u www-data -l | grep -v '${nginx_prefix}/html/${domain_list[$1]}/cron.php' | crontab -u www-data -
 	crontab -u www-data -l > ${domain_list[$1]}
-	echo "*/5 * * * * php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php &" >> ${domain_list[$1]}
+	echo "*/5 * * * * php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php > /dev/null" >> ${domain_list[$1]}
 	crontab -u www-data ${domain_list[$1]}
-	rm ${domain_list[$1]}
-    sleep 15s
-
-    echo -e "\\n\\n"
-    tyblue "务必先打开网址安装好nextcloud，否则会报错，按两次回车键以继续自动添加nextcloud默认缺失配置。。。"
-    read -s
-    read -s
-	sed -i '$d' ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+	else
+	sudo crontab -l | grep -v '${nginx_prefix}/html/${domain_list[$1]}/cron.php' | sudo crontab -
+	crontab -l > ${domain_list[$1]}
+	echo "*/5 * * * * sudo -u www-data php -f ${nginx_prefix}/html/${domain_list[$1]}/cron.php > /dev/null" >> ${domain_list[$1]}
+	crontab ${domain_list[$1]}
+	fi
+	rm -f ${domain_list[$1]}
+	}
+install_mysql()
+{ 
+if ! [ -x "$(command -v mysql)" ]; then
+red "安装和配置mariadb..."
+    if [[ -x "$(command -v apt-get)" ]];then
+        PACKAGE_MANAGER='apt-get'
+    elif [[ -x "$(command -v yum)" ]];then
+        PACKAGE_MANAGER='yum'
+    elif [[ -x "$(command -v dnf)" ]];then
+        PACKAGE_MANAGER='dnf'
+    else
+        red "Not support OS!"
+        exit 1
+    fi
+   if [[ ${PACKAGE_MANAGER} == 'apt-get' ]];then     
+	  ${PACKAGE_MANAGER} update
+      ${PACKAGE_MANAGER} install mariadb-server expect -y
+    elif [[ ${PACKAGE_MANAGER} == 'yum' ]];then
+      ${PACKAGE_MANAGER} install mariadb-server expect -y
+    else
+      ${PACKAGE_MANAGER} install mariadb-server expect -y
+   fi
+systemctl daemon-reload
+systemctl enable mariadb
+systemctl start mariadb
+else
+yellow "检测到mysql已安装，跳过安装"
+fi
+}
+initialization_mysql()
+{
+	root_password=""
+	while [ -z "${root_password}" ]
+            do
+                read -p "请输入mariadb数据库root密码：" root_password
+            done
+	! ask_if "数据库root密码是\"${root_password}\"确定吗？(y/n)" && return 0
+red "初始化mysql,确保没有密码，任何人都无法访问mysql服务器"
+mysql -e "UPDATE mysql.user SET Password = PASSWORD('${root_password}') WHERE User = 'root'" 
+# Kill the anonymous users
+mysql -e "DROP USER IF EXISTS ''@'localhost'"
+# Because our hostname varies we'll use some Bash magic here.
+mysql -e "DROP USER IF EXISTS ''@'$(hostname)'"
+# Kill off the demo database
+mysql -e "DROP DATABASE IF EXISTS test"
+    if [[ ${PACKAGE_MANAGER} == 'apt-get' ]];then
+cat > '/etc/mysql/my.cnf' << EOF
+# MariaDB-specific config file.
+# Read by /etc/mysql/my.cnf
+[client]
+default-character-set = utf8mb4 
+[mysqld]
+max_allowed_packet = 16M
+group_concat_max_len = 8192
+max_connections = 2000
+character-set-server  = utf8mb4 
+collation-server      = utf8mb4_unicode_ci
+character_set_server   = utf8mb4 
+collation_server       = utf8mb4_unicode_ci
+# Import all .cnf files from configuration directory
+!includedir /etc/mysql/mariadb.conf.d/
+bind-address=127.0.0.1
+# innodb_read_only_compressed=OFF
+innodb_flush_log_at_trx_commit = 2
+[mariadb]
+userstat = 1
+tls_version = TLSv1.2,TLSv1.3
+log_error=/var/log/mysql/mariadb.err
+# ssl_cert = ${nginx_prefix}/certs/${domain_list[0]}.cer
+# ssl_key = ${nginx_prefix}/certs/${domain_list[0]}.key
+EOF
+    for ((i=0;i<${#true_domain_list[@]};i++))
+    do
+echo "# ssl_cert = ${nginx_prefix}/certs/${true_domain_list[$i]}.cer" >> /etc/mysql/my.cnf
+echo "# ssl_key = ${nginx_prefix}/certs/${true_domain_list[$i]}.key" >> /etc/mysql/my.cnf
+        ((i==${#true_domain_list[@]}-1))
+    done
+	fi
+SECURE_MYSQL=$(expect -c "
+set timeout 10
+spawn mysql_secure_installation
+expect \"Enter current password for root (enter for none):\"
+send \"\r\"
+expect \"Switch to unix_socket authentication\"
+send \"n\r\"
+expect \"Change the root password?\"
+send \"n\r\"
+expect \"Remove anonymous users?\"
+send \"y\r\"
+expect \"Disallow root login remotely?\"
+send \"y\r\"
+expect \"Remove test database and access to it?\"
+send \"y\r\"
+expect \"Reload privilege tables now?\"
+send \"y\r\"
+expect eof
+")
+echo "$SECURE_MYSQL"
+systemctl restart mariadb
+}
+create_mysql() {
+        if [[ ! -n ${root_password} ]]; then
+		while [ -z "${root_password}" ]
+            do
+                read -p "请输入mysql root密码：" root_password
+            done
+		fi
+        mysql_user=""
+        while [ -z "${mysql_user}" ]
+        do
+            red     "系统需要为nextcloud网盘创建一个专用数据库/用户"
+            read -p "请输入mysql普通用户/数据库名:" mysql_user
+        done
+        mysql_password=""
+        while [ -z "${mysql_password}" ]
+        do
+            yellow "数据库用户/密码也是\\033[33mnextcloud登陆名/密码"
+            read -p "请输入mysql普通用户密码:" mysql_password
+        done
+        ! ask_if "数据库/用户\"${mysql_user}\"密码\"${mysql_password}\"确定吗？(y/n)" && return 0
+green "创建用户\"${mysql_user}\"并授予暂存数据库的所有权限..."
+mysql -uroot -p${root_password} -e "DROP DATABASE IF EXISTS ${mysql_user}"
+mysql -uroot -p${root_password} -e "DROP USER IF EXISTS ${mysql_user}@localhost"
+mysql -uroot -p${root_password} -e "DROP USER IF EXISTS ${mysql_user}@$(hostname)"
+mysql -uroot -p${root_password} -e "FLUSH PRIVILEGES"
+mysql -uroot -p${root_password} -e "CREATE DATABASE IF NOT EXISTS ${mysql_user}"
+mysql -uroot -p${root_password} -e "CREATE USER IF NOT EXISTS '${mysql_user}'@'localhost' IDENTIFIED BY '${mysql_password}'" 
+mysql -uroot -p${root_password} -e "GRANT ALL PRIVILEGES ON ${mysql_user}.* to '${mysql_user}'@'localhost'"
+mysql -uroot -p${root_password} -e "FLUSH PRIVILEGES"
+}
+auto_install_nextcloud() {
+    if [[ -x "$(command -v apt-get)" ]];then
+        PACKAGE_MANAGER='apt-get'
+    elif [[ -x "$(command -v yum)" ]];then
+        PACKAGE_MANAGER='yum'
+    elif [[ -x "$(command -v dnf)" ]];then
+        PACKAGE_MANAGER='dnf'
+    else
+        red "Not support OS!"
+    fi
+    if [[ ${PACKAGE_MANAGER} == 'apt-get' ]]; then
+        sock_path="localhost:/run/mysqld/mysqld.sock"
+	elif [[ ${PACKAGE_MANAGER} == 'yum' ]]; then
+        sock_path="127.0.0.1"
+	elif [[ ${PACKAGE_MANAGER} == 'dnf' ]]; then
+        red "nextcloud安装暂时未测试此系统"
+		green "如未安装成功删除config目录下的autoconfig.php手动安装"
+		sock_path="127.0.0.1"
+	fi
+  cat > "${nginx_prefix}/html/${domain_list[$1]}/config/autoconfig.php" << EOF
+<?php
+\$AUTOCONFIG = array(
+  "dbtype"        => "mysql",
+  "dbname"        => "${mysql_user}",
+  "dbuser"        => "${mysql_user}",
+  "dbpass"        => "${mysql_password}",
+  "dbhost"        => "${sock_path}",
+  "dbtableprefix" => "",
+  "adminlogin"    => "${mysql_user}",
+  "adminpass"     => "${mysql_password}",
+  "directory"     => "${nginx_prefix}/html/${domain_list[$1]}/data",
+);
+EOF
+}
+add_nextcloud_config() {
+    chmod -R 0755 ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+    sed -i '$d' ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'default_phone_region' => 'CN'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'default_language' => 'zh_CN'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'default_locale' => 'zh'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
     echo "  'memcache.local' => '\\OC\\Memcache\\APCu'," >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
-	echo ");" >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
-    echo
+    echo ");" >> ${nginx_prefix}/html/${domain_list[$1]}/config/config.php
+}
+#初始化nextcloud 参数 1:域名在列表中的位置
+let_init_nextcloud()
+{
+    echo -e "\\n\\n"
+	tyblue "输入y选择自动安装会自动安装mariadb数据库"
+	tyblue "安装完过程会提示你输入数据库用户名/密码"
+	yellow "安装完成后nextcloud管理员用户名/密码同数据库名和密码一致"
+	red    "内存小的机器输入n回车手动安装可以用SQLite数据库"
+	read -p "是否需要自动安装配置nextcloud? [Y/n]?" auto_config_nextcloud
+	case $auto_config_nextcloud in
+	[yY][eE][sS] | [yY])
+	if [ ! "$(command -v mysql)" ]; then
+	install_mysql
+	initialization_mysql
+	fi
+	create_mysql
+	auto_install_nextcloud
+	curl -m 15 -s -o /dev/null https://${domain_list[$1]}
+	nextcloud_crontab
+	sleep 5s
+	add_nextcloud_config
+	echo
+	;;
+	*)
+    yellow "请立即打开\"https://${domain_list[$1]}\"进行Nextcloud初始化设置："
+    tyblue " 1.自定义管理员的用户名和密码"
+    tyblue " 2.数据库类型选择SQLite"
+    tyblue " 3.建议不勾选\"安装推荐的应用\"，因为进去之后还能再安装"
+	
+    sleep 15s
+
+    echo -e "\\n\\n"
+	red     "输入y自动配置apcu缓存，务必确定你已经打开\"https://${domain_list[$1]}\"安装完成nextcloud"
+    tyblue  "确定已安装好nextcloud，否则请输入n，按两次回车键以继续。。。"
+	read -p "是否给nextcloud配置apcu缓存+默认语言+默认语言 [Y/n]?" add_apcu
+	nextcloud_crontab
+    read -s
+    read -s
+	case $add_apcu in
+	[yY][eE][sS] | [yY])
+	add_nextcloud_config
+	;;
+	*)
+	echo
+	;;
+	esac
+	echo
+	;;
+	esac
 }
 
 print_share_link()
 {
-    if [ $protocol_1 -eq 1 ]; then
-        local ip=""
-        while [ -z "$ip" ]
-        do
-            read -p "请输入您的服务器IP(用于生成分享链接)：" ip
-        done
-    fi
-    if [[ "$ip" =~ : ]] && ! [[ "$ip" =~ ^\[.*:.*\]$ ]]; then
-        ip="[$ip]"
-    fi
-    echo
-    tyblue "分享链接："
-    if [ $protocol_1 -eq 1 ]; then
-        green  "============ VLESS-TCP-TLS\\033[35m(不走CDN)\\033[32m ============"
-        for i in "${!domain_list[@]}"
-        do
-            if [ "${pretend_list[$i]}" == "1" ] || [ "${pretend_list[$i]}" == "2" ]; then
-                tyblue "vless://${xid_1}@${ip}:443?security=tls&sni=${domain_list[$i]}&alpn=http%2F1.1"
-            else
-                tyblue "vless://${xid_1}@${ip}:443?security=tls&sni=${domain_list[$i]}&alpn=h2,http%2F1.1"
-            fi
-        done
-        green  "============ VLESS-TCP-XTLS\\033[35m(不走CDN)\\033[32m ============"
-        yellow "Linux/安卓/路由器："
-        for i in "${!domain_list[@]}"
-        do
-            if [ "${pretend_list[$i]}" == "1" ] || [ "${pretend_list[$i]}" == "2" ]; then
-                tyblue "vless://${xid_1}@${ip}:443?security=xtls&sni=${domain_list[$i]}&alpn=http%2F1.1&flow=xtls-rprx-splice"
-            else
-                tyblue "vless://${xid_1}@${ip}:443?security=xtls&sni=${domain_list[$i]}&alpn=h2,http%2F1.1&flow=xtls-rprx-splice"
-            fi
-        done
-        yellow "其他："
-        for i in "${!domain_list[@]}"
-        do
-            if [ "${pretend_list[$i]}" == "1" ] || [ "${pretend_list[$i]}" == "2" ]; then
-                tyblue "vless://${xid_1}@${ip}:443?security=xtls&sni=${domain_list[$i]}&alpn=http%2F1.1&flow=xtls-rprx-direct"
-            else
-                tyblue "vless://${xid_1}@${ip}:443?security=xtls&sni=${domain_list[$i]}&alpn=h2,http%2F1.1&flow=xtls-rprx-direct"
-            fi
-        done
-    fi
+    tyblue "分享链接："    
     if [ $protocol_2 -eq 1 ]; then
         green  "=========== VLESS-gRPC-TLS \\033[35m(若域名开启了CDN解析则会连接CDN，否则将直连)\\033[32m ==========="
         for i in "${domain_list[@]}"
@@ -3374,7 +3554,7 @@ install_update_xray_tls_web()
     check_important_dependence_installed wget wget
     check_important_dependence_installed "procps" "procps-ng"
     install_epel
-    ask_update_script
+#    ask_update_script
     check_ssh_timeout
     uninstall_firewall
     doupdate
@@ -3399,7 +3579,7 @@ install_update_xray_tls_web()
 
     local install_php
     if [ $update -eq 0 ]; then
-        [ "${pretend_list[0]}" == "2" ] && install_php=1 || install_php=0
+        [ "${pretend_list[0]}" == "2" ] || [ "${pretend_list[0]}" == "4" ] || [ "${pretend_list[0]}" == "6" ] && install_php=1 || install_php=0
     else
         install_php=$php_is_installed
     fi
@@ -3608,7 +3788,7 @@ install_check_update_update_php()
     install_epel
     local php_status=0
     if [ $php_is_installed -eq 1 ]; then
-        ask_update_script_force
+#        ask_update_script_force
         if check_php_update; then
             green "php有新版本"
             ! ask_if "是否更新？(y/n)" && return 0
@@ -3618,7 +3798,7 @@ install_check_update_update_php()
         fi
         systemctl -q is-active php-fpm && php_status=1
     else
-        ask_update_script
+#        ask_update_script
         tyblue "安装php用于运行nextcloud网盘"
         yellow "编译&&安装php可能需要消耗15-60分钟"
         yellow "且php将占用一定系统资源，不建议内存<512M的机器使用"
@@ -3646,7 +3826,7 @@ check_update_update_nginx()
     check_important_dependence_installed wget wget
     check_important_dependence_installed "procps" "procps-ng"
     install_epel
-    ask_update_script_force
+#    ask_update_script_force
     if check_nginx_update; then
         green "Nginx有新版本"
         ! ask_if "是否更新？(y/n)" && return 0
@@ -3715,12 +3895,12 @@ reinit_domain()
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
     install_acme_dependence
-    ask_update_script
+#    ask_update_script
     yellow "重置域名将删除所有现有域名(包括域名证书、伪装网站等)"
     ! ask_if "是否继续？(y/n)" && return 0
     get_config_info
     readDomain
-    if [ "${pretend_list[-1]}" == "2" ] && [ $php_is_installed -eq 0 ]; then
+    if ([ "${pretend_list[-1]}" == "2" ] || [ "${pretend_list[-1]}" == "4" ] || [ "${pretend_list[-1]}" == "6" ]) && [ $php_is_installed -eq 0 ]; then
         check_SELinux
         check_important_dependence_installed "procps" "procps-ng"
         install_epel
@@ -3782,7 +3962,7 @@ add_domain()
     get_system_info
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
-    ask_update_script
+#    ask_update_script
     get_config_info
     local need_cloudreve=0
     check_need_cloudreve && need_cloudreve=1
@@ -3801,7 +3981,7 @@ add_domain()
         tyblue "Nextcloud可以用于多个域名"
         return 1
     fi
-    if [ "${pretend_list[-1]}" == "2" ] && [ $php_is_installed -eq 0 ]; then
+    if ([ "${pretend_list[-1]}" == "2" ] || [ "${pretend_list[-1]}" == "4" ] || [ "${pretend_list[-1]}" == "6" ]) && [ $php_is_installed -eq 0 ]; then
         check_SELinux
         check_important_dependence_installed "procps" "procps-ng"
         install_epel
@@ -3886,7 +4066,7 @@ change_pretend()
     get_system_info
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
-    ask_update_script
+#    ask_update_script
     get_config_info
     local change=""
     if [ ${#domain_list[@]} -eq 1 ]; then
@@ -3928,7 +4108,7 @@ change_pretend()
         tyblue "Nextcloud可以用于多个域名"
         return 1
     fi
-    if [ "$pretend" == "2" ] && [ $php_is_installed -eq 0 ]; then
+    if ([ "$pretend" == "2" ] || [ "$pretend" == "2" ] || [ "$pretend" == "2" ]) && [ $php_is_installed -eq 0 ]; then
         check_SELinux
         check_important_dependence_installed "procps" "procps-ng"
         install_epel
@@ -3957,7 +4137,7 @@ reinstall_cloudreve()
     check_SELinux
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
-    ask_update_script
+#    ask_update_script
     install_web_dependence "1"
     enter_temp_dir
     local i
