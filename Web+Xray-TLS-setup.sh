@@ -3793,7 +3793,7 @@ install_check_update_update_php()
     install_epel
     local php_status=0
     if [ $php_is_installed -eq 1 ]; then
-#        ask_update_script_force
+        ask_update_script_force
         if check_php_update; then
             green "php有新版本"
             ! ask_if "是否更新？(y/n)" && return 0
@@ -3803,7 +3803,7 @@ install_check_update_update_php()
         fi
         systemctl -q is-active php-fpm && php_status=1
     else
-#        ask_update_script
+        ask_update_script
         tyblue "安装php用于运行nextcloud网盘"
         yellow "编译&&安装php可能需要消耗15-60分钟"
         yellow "且php将占用一定系统资源，不建议内存<512M的机器使用"
@@ -3831,7 +3831,7 @@ check_update_update_nginx()
     check_important_dependence_installed wget wget
     check_important_dependence_installed "procps" "procps-ng"
     install_epel
-#    ask_update_script_force
+    ask_update_script_force
     if check_nginx_update; then
         green "Nginx有新版本"
         ! ask_if "是否更新？(y/n)" && return 0
@@ -3900,7 +3900,7 @@ reinit_domain()
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
     install_acme_dependence
-#    ask_update_script
+    ask_update_script
     yellow "重置域名将删除所有现有域名(包括域名证书、伪装网站等)"
     ! ask_if "是否继续？(y/n)" && return 0
     get_config_info
@@ -3967,7 +3967,7 @@ add_domain()
     get_system_info
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
-#    ask_update_script
+    ask_update_script
     get_config_info
     local need_cloudreve=0
     check_need_cloudreve && need_cloudreve=1
@@ -4071,7 +4071,7 @@ change_pretend()
     get_system_info
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
-#    ask_update_script
+    ask_update_script
     get_config_info
     local change=""
     if [ ${#domain_list[@]} -eq 1 ]; then
@@ -4142,7 +4142,7 @@ reinstall_cloudreve()
     check_SELinux
     check_important_dependence_installed ca-certificates ca-certificates
     check_important_dependence_installed wget wget
-#    ask_update_script
+    ask_update_script
     install_web_dependence "1"
     enter_temp_dir
     local i
