@@ -19,8 +19,8 @@ unset timezone
 unset ssh_service
 
 #安装配置信息
-nginx_version="nginx-1.23.2"
-openssl_version="openssl-openssl-3.0.5"
+nginx_version="nginx-1.23.3"
+openssl_version="openssl-openssl-3.0.8"
 nginx_prefix="/usr/local/nginx"
 nginx_config="${nginx_prefix}/conf.d/xray.conf"
 nginx_service="/etc/systemd/system/nginx.service"
@@ -33,8 +33,8 @@ apcu="$(curl -H 'Cache-Control: no-cache' -s "https://api.github.com/repos/krakj
     if [[ ! -n "$apcu" ]]; then
         apcu=5.1.22
     fi
-	
-php_version="php-8.1.13"
+
+php_version="php-7.4.33"
 php_prefix="/usr/local/php"
 php_service="/etc/systemd/system/php-fpm.service"
 unset php_is_installed
@@ -44,7 +44,7 @@ cloudreve_prefix="/usr/local/cloudreve"
 cloudreve_service="/etc/systemd/system/cloudreve.service"
 unset cloudreve_is_installed
 
-nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-25.0.2.zip"
+nextcloud_url="https://download.nextcloud.com/server/releases/nextcloud-24.0.10.tar.bz2"
 
 xray_config="/usr/local/etc/xray/config.json"
 unset xray_is_installed
@@ -60,11 +60,11 @@ unset domain_config_list
 # 域名伪装列表，对应域名列表
 unset pretend_list
 
-# TCP使用的会话层协议，0代表禁用，1代表VLESS
+# TCP配置，0代表禁用，1代表XTLS，2代表TLS，3代表XTLS+TLS
 unset protocol_1
-# grpc使用的会话层协议，0代表禁用，1代表VLESS，2代表VMess
+# grpc使用的代理协议，0代表禁用，1代表VLESS，2代表VMess
 unset protocol_2
-# WebSocket使用的会话层协议，0代表禁用，1代表VLESS，2代表VMess
+# WebSocket使用的代理协议，0代表禁用，1代表VLESS，2代表VMess
 unset protocol_3
 # grpc的serviceName
 unset serviceName
@@ -320,7 +320,7 @@ apt_purge()
     local ret_code=0
     mv /etc/apt/sources.list /etc/apt/sources.list.bak
     mv /etc/apt/sources.list.d /etc/apt/sources.list.d.bak
-    $apt -y purge "$@" || ret_code=1
+    $apt -y --allow-change-held-packages purge "$@" || ret_code=1
     mv /etc/apt/sources.list.bak /etc/apt/sources.list
     mv /etc/apt/sources.list.d.bak /etc/apt/sources.list.d
     return $ret_code
@@ -330,7 +330,7 @@ apt_auto_remove_purge()
     local ret_code=0
     mv /etc/apt/sources.list /etc/apt/sources.list.bak
     mv /etc/apt/sources.list.d /etc/apt/sources.list.d.bak
-    $apt -y --auto-remove purge "$@" || ret_code=1
+    $apt -y --auto-remove --allow-change-held-packages purge "$@" || ret_code=1
     mv /etc/apt/sources.list.bak /etc/apt/sources.list
     mv /etc/apt/sources.list.d.bak /etc/apt/sources.list.d
     return $ret_code
@@ -460,7 +460,7 @@ check_need_php()
     local i
     for i in "${pretend_list[@]}"
     do
-        ([ "$i" == "2" ] || [ "$i" == "4" ] || [ "$i" == "6" ]) && return 0
+        [ "$i" == "2" ] || [ "$i" == "4" ] || [ "$i" == "6" ] && return 0
     done
     return 1
 }
@@ -673,7 +673,13 @@ get_config_info()
     [ $protocol_2 -ne 0 ] && ((temp++))
     [ $protocol_3 -ne 0 ] && ((temp++))
     if [ $(grep -c '"clients"' $xray_config) -eq $temp ]; then
-        protocol_1=1
+        if grep -q '"flow"[ '$'\t]*:[ '$'\t]*"xtls-rprx-vision"' $xray_config; then
+            protocol_1=1
+        elif ! grep -q '"flow"' $xray_config; then
+            protocol_1=2
+        else
+            protocol_1=3
+        fi
         xid_1="$(grep '"id"' $xray_config | head -n 1 | cut -d : -f 2 | cut -d \" -f 2)"
     else
         protocol_1=0
@@ -870,8 +876,14 @@ case "$(uname -m)" in
     'amd64' | 'x86_64')
         machine='amd64'
         ;;
-    'armv5tel' | 'armv6l' | 'armv7' | 'armv7l')
-        machine='arm'
+    'armv5tel')
+        machine='armv5'
+        ;;
+    'armv6l')
+        machine='armv6'
+        ;;
+    'armv7' | 'armv7l')
+        machine='armv7'
         ;;
     'armv8' | 'aarch64')
         machine='arm64'
@@ -1156,7 +1168,7 @@ doupdate()
             if [ $in_install_update_xray_tls_web -eq 1 ]; then
                 echo
                 tyblue "提示：即将开始升级系统"
-                yellow " 升级完系统后服务器将重启，重启后，请再次运行脚本完成 Web+Xray-TLS 剩余部分的安装/升级"
+                yellow " 升级完系统后服务器将重启，重启后，请再次运行脚本完成 Web+TLS+Web 剩余部分的安装/升级"
                 yellow " 再次运行脚本时，重复之前选过的选项即可"
                 echo
                 sleep 2s
@@ -1587,7 +1599,7 @@ install_bbr()
                     if [ $in_install_update_xray_tls_web -eq 1 ]; then
                         echo
                         tyblue "提示："
-                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Web+Xray-TLS 剩余部分的安装/升级"
+                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Web+TLS+Web 剩余部分的安装/升级"
                         yellow " 再次运行脚本时，重复之前选过的选项即可"
                         echo
                         sleep 2s
@@ -1596,11 +1608,11 @@ install_bbr()
                     fi
                     local temp_kernel_sh_url
                     if [ $choice -eq 1 ]; then
-                        temp_kernel_sh_url="https://github.com/yspcn/update-kernel/raw/master/update-kernel-stable.sh"
+                        temp_kernel_sh_url="https://github.com/kirin10000/update-kernel/raw/master/update-kernel-stable.sh"
                     elif [ $choice -eq 4 ]; then
-                        temp_kernel_sh_url="https://github.com/yspcn/update-kernel/raw/master/update-kernel.sh"
+                        temp_kernel_sh_url="https://github.com/kirin10000/update-kernel/raw/master/update-kernel.sh"
                     else
-                        temp_kernel_sh_url="https://github.com/yspcn/xanmod-install/raw/main/xanmod-install.sh"
+                        temp_kernel_sh_url="https://github.com/kirin10000/xanmod-install/raw/main/xanmod-install.sh"
                     fi
                     if ! wget -O kernel.sh "$temp_kernel_sh_url"; then
                         red    "获取内核安装脚本失败"
@@ -1634,7 +1646,7 @@ install_bbr()
                     if [ $in_install_update_xray_tls_web -eq 1 ]; then
                         echo
                         tyblue "提示：开启bbr需要更换内核"
-                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Web+Xray-TLS 剩余部分的安装/升级"
+                        yellow " 更换内核后服务器将重启，重启后，请再次运行脚本完成 Web+TLS+Web 剩余部分的安装/升级"
                         yellow " 再次运行脚本时，重复之前选过的选项即可"
                         echo
                         sleep 2s
@@ -1673,7 +1685,7 @@ install_bbr()
                 yellow " 重启后，请："
                 yellow "    1. 再次运行脚本，重复之前选过的选项"
                 yellow "    2. 到这一步时，再次选择这个选项完成 bbrplus/bbr魔改版/暴力bbr魔改版/锐速 剩余部分的安装"
-                yellow "    3. 选择 \"退出bbr安装\" 选项完成 Web+Xray-TLS 剩余部分的安装/升级"
+                yellow "    3. 选择 \"退出bbr安装\" 选项完成 Web+TLS+Web 剩余部分的安装/升级"
             else
                 yellow " 重启后，请再次运行脚本并选择这个选项完成 bbrplus/bbr魔改版/暴力bbr魔改版/锐速 剩余部分的安装"
             fi
@@ -1706,8 +1718,8 @@ install_bbr()
 readProtocolConfig()
 {
     echo -e "\\n\\n\\n"
-    tyblue "---------------------请选择传输层协议---------------------"
-#    tyblue " 1. TCP nginx前置版此功能失效"
+    tyblue "---------------------请选择传输协议---------------------"
+    tyblue " 1. TCP nginx前置版不可选择"
     tyblue " 2. gRPC"
     tyblue " 3. WebSocket"
     tyblue " 4. TCP + gRPC"
@@ -1717,10 +1729,9 @@ readProtocolConfig()
     yellow " 0. 无 (仅提供Web服务)"
     echo
     blue   " 注："
-    blue   "   1. 不知道什么是CDN或不使用CDN，请选择TCP"
+    blue   "   1. 如不使用CDN，请选择TCP"
     blue   "   2. gRPC和WebSocket支持通过CDN，关于两者的区别，详见：https://github.com/yspcn/Xray-script#关于grpc与websocket"
-    blue   "   3. 只有TCP能使用XTLS，且XTLS完全兼容TLS"
-    blue   "   4. 能使用TCP传输的只有VLESS"
+    blue   "   3. 仅TCP能使用XTLS"
     echo
     local choice=""
     while [[ ! "$choice" =~ ^(0|[1-9][0-9]*)$ ]] || ((choice>7))
@@ -1742,8 +1753,20 @@ readProtocolConfig()
     else
         protocol_3=0
     fi
+    if [ $protocol_1 -eq 1 ]; then
+        tyblue "-------------- 请选择TCP传输配置 --------------"
+        tyblue " 1. VLESS + TCP + XTLS"
+        tyblue " 2. VLESS + TCP + TLS"
+        tyblue " 3. VLESS + TCP + XTLS/TLS"
+        echo
+        protocol_1=""
+        while [[ ! "$protocol_1" =~ ^([1-9][0-9]*)$ ]] || ((protocol_1>3))
+        do
+            read -p "您的选择是：" protocol_1
+        done
+    fi
     if [ $protocol_2 -eq 1 ]; then
-        tyblue "-------------- 请选择使用gRPC传输的会话层协议 --------------"
+        tyblue "-------------- 请选择使用gRPC传输的代理协议 --------------"
         tyblue " 1. VMess"
         tyblue " 2. VLESS"
         echo
@@ -1757,7 +1780,7 @@ readProtocolConfig()
         [ $choice -eq 1 ] && protocol_2=2
     fi
     if [ $protocol_3 -eq 1 ]; then
-        tyblue "-------------- 请选择使用WebSocket传输的会话层协议 --------------"
+        tyblue "-------------- 请选择使用WebSocket传输的代理协议 --------------"
         tyblue " 1. VMess"
         tyblue " 2. VLESS"
         echo
@@ -1788,7 +1811,7 @@ readPretend()
         purple "     模拟网站后台"
         red    " 4. 自定义PHP动态网站 (不推荐)"
         red    " 5. 自定义反向代理网页 (不推荐)"
-        green  " 6. 安装wordpress（需要先安装nextcloud才能用这个）"
+		green  " 6. 安装wordpress（推荐先安装nextcloud再安装）"
         echo
         green  " 内存<128MB 建议选择 403页面"
         green  " 128MB<=内存<1G 建议选择 Cloudreve"
@@ -1805,7 +1828,7 @@ readPretend()
         if [ $pretend -eq 1 ]; then
             if [ -z "$machine" ]; then
                 red "您的VPS指令集不支持Cloudreve！"
-                yellow "Cloudreve仅支持x86_64、arm64和arm指令集"
+                yellow "Cloudreve仅支持 x86_64, arm64, armv7, armv6, armv5 !"
                 sleep 3s
                 queren=0
             fi
@@ -1853,9 +1876,8 @@ readPretend()
                 ! ask_if "确定选择吗？(y/n)" && queren=0
             fi
         elif [ $pretend -eq 4 ]; then
-			if [ $php_is_installed -eq 0 ]; then
-                tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的php网站源代码"
-#                ! ask_if "确认并继续？(y/n)" && queren=0
+            tyblue "安装完成后请在 \"${nginx_prefix}/html/$1\" 放置您的php网站源代码"
+            if [ $php_is_installed -eq 0 ]; then
                 tyblue "安装自定义动态网站需要安装php"
                 yellow "编译&&安装php可能需要额外消耗15-60分钟"
                 yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
@@ -1868,10 +1890,9 @@ readPretend()
             do
                 read -p "请输入反向代理网址：" pretend
             done
-        elif [ $pretend -eq 6 ]; then
-			if [ $php_is_installed -eq 0 ]; then
+		elif [ $pretend -eq 6 ]; then
                 tyblue "wordpress安装路径 \"${nginx_prefix}/html/$1\" "
-#                ! ask_if "确认并继续？(y/n)" && queren=0
+			if [ $php_is_installed -eq 0 ]; then
                 tyblue "安装wordpress需要安装php"
                 yellow "编译&&安装php可能需要额外消耗15-60分钟"
                 yellow "php将占用一定系统资源，不建议内存<512M的机器使用"
@@ -2014,6 +2035,13 @@ install_web_dependence()
         for i in "${pretend_list[@]}"
         do
             if [ "$i" == "2" ]; then
+                install_dependence ca-certificates curl bzip2
+                break
+            fi
+        done
+		for i in "${pretend_list[@]}"
+        do
+            if [ "$i" == "6" ]; then
                 install_dependence ca-certificates wget unzip
                 break
             fi
@@ -2022,6 +2050,8 @@ install_web_dependence()
         if [ "$1" == "1" ]; then
             install_dependence ca-certificates wget
         elif [ "$1" == "2" ]; then
+            install_dependence ca-certificates curl bzip2
+		elif [ "$1" == "6" ]; then
             install_dependence ca-certificates wget unzip
         fi
     fi
@@ -2112,7 +2142,6 @@ instal_php_apcu()
     else
         swap_off
     fi
-#    mv apcu.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
     cd ..
     rm -f apcu-${apcu}.tgz
     rm -rf apcu-${apcu}
@@ -2140,7 +2169,6 @@ instal_php_redis()
     else
         swap_off
     fi
-#    mv redis.so "$(${php_prefix}/bin/php -i | grep "^extension_dir" | awk '{print $3}')"
     cd ..
     rm -f redis-${redis}.tgz
     rm -rf redis-${redis}
@@ -2156,9 +2184,9 @@ install_php_part1()
     cd ..
     rm -rf "${php_version}"
     instal_php_imagick
-    instal_php_apcu
+	instal_php_apcu
     instal_php_redis
-    ln -s ${php_prefix}/bin/php /usr/bin/php
+    ln -s "${php_prefix}/bin/php /usr/bin/php"
     mv "${php_prefix}/php-fpm.service.default.temp" "${php_prefix}/php-fpm.service.default"
     php_is_installed=1
 }
@@ -2187,8 +2215,8 @@ cat >> ${php_prefix}/etc/php.ini << EOF
 extension=imagick.so
 zend_extension=opcache.so
 opcache.enable=1
-opcache.interned_strings_buffer=16
 date.timezone=$timezone
+opcache.interned_strings_buffer=16
 extension=apcu.so
 extension=redis.so
 opcache.enable=1
@@ -2198,8 +2226,8 @@ apc.enable_cli=1
 ;pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
 ;mysqli.default_socket=/var/run/mysqld/mysqld.sock
 
-memory_limit=512M
-post_max_size=40960M
+memory_limit=-1
+post_max_size=0
 upload_max_filesize=9223372036854775807
 max_file_uploads=50000
 max_execution_time=0
@@ -2292,7 +2320,7 @@ install_nginx_part1()
     green "正在安装Nginx。。。"
     cd "${nginx_version}"
     make install
-    ln -s ${nginx_prefix}/sbin/nginx /usr/bin/nginx
+	ln -s "${nginx_prefix}/sbin/nginx /usr/bin/nginx"
     cd ..
     rm -rf "${nginx_version}"
     rm -rf "$openssl_version"
@@ -2359,6 +2387,8 @@ cat > ${nginx_prefix}/conf.d/nextcloud.conf <<EOF
         try_files \$fastcgi_script_name =404;
         include fastcgi.conf;
         fastcgi_param PATH_INFO \$path_info;
+#        fastcgi_param REMOTE_ADDR 127.0.0.1;
+#        fastcgi_param SERVER_PORT 443;
         fastcgi_param HTTPS on;
         fastcgi_param modHeadersAvailable true;
         fastcgi_param front_controller_active true;
@@ -2588,11 +2618,11 @@ http {
     include       mime.types;
     default_type  application/octet-stream;
 
-    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-#                      '\$status \$body_bytes_sent "\$http_referer" '
-#                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+    #log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+    #                  '\$status \$body_bytes_sent "\$http_referer" '
+    #                  '"\$http_user_agent" "\$http_x_forwarded_for"';
 
-    access_log  logs/access.log  main;
+    #access_log  logs/access.log  main;
 
     sendfile        on;
     #tcp_nopush     on;
@@ -2715,16 +2745,18 @@ cat >> $nginx_config<<EOF
 #server {
 #    listen 80;
 #    listen [::]:80;
+#    listen unix:/dev/shm/nginx/default.sock;
+#    listen unix:/dev/shm/nginx/h2.sock http2;
 #    server_name ${temp_domain_list2[@]};
 #    return 301 https://www.\$host\$request_uri;
 #}
 EOF
     fi
+
     for ((i=0;i<${#domain_list[@]};i++))
     do
 cat >> $nginx_config<<EOF
 server {
-    server_name ${domain_list[$i]};
     listen 80;
     listen [::]:80;
     listen 443 ssl http2;
@@ -2735,14 +2767,14 @@ server {
     ssl_certificate ${nginx_prefix}/certs/${domain_list[$i]}.cer;
     ssl_certificate_key ${nginx_prefix}/certs/${domain_list[$i]}.key;
     server_name ${domain_list[$i]};
-    ssl_protocols         TLSv1.3;
+    ssl_protocols  TLSv1.2 TLSv1.3;
     ssl_ecdh_curve        X25519:P-256:P-384:P-521; 
     ssl_early_data on;
     ssl_stapling on;
     ssl_stapling_verify on;
     ssl_prefer_server_ciphers on;
     add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload" always;
-    include ${nginx_prefix}/conf.d/cloudflare.conf;
+	include ${nginx_prefix}/conf.d/cloudflare.conf;
 	location $path {
         proxy_redirect off;
         proxy_pass http://unix:/dev/shm/xray/ws.sock;
@@ -2763,13 +2795,19 @@ server {
 EOF
         if [ $protocol_2 -ne 0 ]; then
 cat >> $nginx_config<<EOF
+    #client_header_timeout 24h;
+    #ignore_invalid_headers off;
     location = /$serviceName/TunMulti {
         client_max_body_size 0;
         client_body_timeout 24h;
+        #keepalive_requests 1000;
+        #keepalive_time 24h;
         keepalive_timeout 24h;
         send_timeout 24h;
+        #grpc_buffer_size 0;
         grpc_read_timeout 24h;
         grpc_send_timeout 24h;
+        #grpc_socket_keepalive off;
         lingering_close always;
         lingering_time 24h;
         lingering_timeout 24h;
@@ -2802,7 +2840,7 @@ EOF
             fi
         elif [ "${pretend_list[$i]}" == "4" ]; then
             echo "    root ${nginx_prefix}/html/${true_domain_list[$i]};" >> $nginx_config
-           echo "    include ${nginx_prefix}/conf.d/custom.conf;" >> $nginx_config
+			echo "    include ${nginx_prefix}/conf.d/custom.conf;" >> $nginx_config
         elif [ "${pretend_list[$i]}" == "6" ]; then
             echo "    root ${nginx_prefix}/html/${true_domain_list[$i]};" >> $nginx_config
            echo "    include ${nginx_prefix}/conf.d/wordpress.conf;" >> $nginx_config
@@ -2843,7 +2881,7 @@ config_xray()
 cat > $xray_config <<EOF
 {
     "log": {
-        "loglevel": "warning"
+        "loglevel": "none"
     },
     "inbounds": [
         {
@@ -2851,15 +2889,20 @@ cat > $xray_config <<EOF
             "protocol": "vless",
             "settings": {
 EOF
-    if [ $protocol_1 -eq 1 ]; then
-cat >> $xray_config <<EOF
-                "clients": [
-                    {
-                        "id": "$xid_1",
-                        "flow": "xtls-rprx-direct"
-                    }
-                ],
-EOF
+    if [ $protocol_1 -ne 0 ]; then
+        echo '                "clients": [' >> $xray_config
+        echo '                    {' >> $xray_config
+        if [ $protocol_1 -eq 1 ]; then
+            echo '                        "id": "'"$xid_1"'",' >> $xray_config
+            echo '                        "flow": "xtls-rprx-vision"' >> $xray_config
+        elif [ $protocol_1 -eq 2 ]; then
+            echo '                        "id": "'"$xid_1"'"' >> $xray_config
+        else
+            echo '                        "id": "'"$xid_1"'",' >> $xray_config
+            echo '                        "flow": "xtls-rprx-vision,none"' >> $xray_config
+        fi
+        echo '                    }' >> $xray_config
+        echo '                ],' >> $xray_config
     fi
     echo '                "decryption": "none",' >> $xray_config
     echo '                "fallbacks": [' >> $xray_config
@@ -2883,8 +2926,8 @@ cat >> $xray_config <<EOF
             },
             "streamSettings": {
                 "network": "tcp",
-                "security": "xtls",
-                "xtlsSettings": {
+                "security": "tls",
+                "tlsSettings": {
                     "alpn": [
                         "h2",
                         "http/1.1"
@@ -2974,18 +3017,7 @@ cat >> $xray_config <<EOF
         {
             "protocol": "freedom"
         }
-    ],
-    "dns": {
-        "servers": [
-            "8.8.8.8",
-            "8.8.4.4",
-            "1.1.1.1",
-            "1.0.0.1",
-            "localhost",
-            "https+local://dns.google/dns-query",
-            "https+local://1.1.1.1/dns-query"
-        ]
-    }
+    ]
 }
 EOF
 }
@@ -3004,14 +3036,19 @@ init_web()
         fi
         turn_on_off_php
     elif [ "${pretend_list[$1]}" == "2" ]; then
-        if ! wget -O "${nginx_prefix}/html/nextcloud.zip" "${nextcloud_url}"; then
+        if ! curl -o "${nginx_prefix}/html/nextcloud.tar.bz2" "${nextcloud_url}"; then
             red    "获取Nextcloud失败"
             yellow "按回车键继续或者按Ctrl+c终止"
             read -s
         fi
+        rm -rf "${nginx_prefix}/html/nextcloud"
+        if ! tar -xjf "${nginx_prefix}/html/nextcloud.tar.bz2" -C "${nginx_prefix}/html"; then
+            red    "解压 Nextcloud 失败"
+            yellow "按回车键继续或者按Ctrl+c终止"
+            read -s
+        fi
+        rm -f "${nginx_prefix}/html/nextcloud.tar.bz2"
         rm -rf "${nginx_prefix}/html/${true_domain_list[$1]}"
-        unzip -q -d "${nginx_prefix}/html" "${nginx_prefix}/html/nextcloud.zip"
-        rm -f "${nginx_prefix}/html/nextcloud.zip"
         mv "${nginx_prefix}/html/nextcloud" "${nginx_prefix}/html/${true_domain_list[$1]}"
         chown -R www-data:www-data "${nginx_prefix}/html/${true_domain_list[$1]}"
         systemctl start php-fpm
@@ -3021,10 +3058,8 @@ init_web()
     elif [ "${pretend_list[$1]}" == "4" ]; then
         mkdir "${nginx_prefix}/html/${true_domain_list[$1]}"
         turn_on_off_php
-		systemctl start php-fpm
-        systemctl enable php-fpm
         turn_on_off_cloudreve
-    elif [ "${pretend_list[$1]}" == "6" ]; then
+	elif [ "${pretend_list[$1]}" == "6" ]; then
        if ! wget -O "${nginx_prefix}/html/latest.zip" https://wordpress.org/latest.zip ; then
             red    "获取wordpess失败"
             yellow "按回车键继续或者按Ctrl+c终止"
@@ -3103,15 +3138,15 @@ install_init_cloudreve()
     chmod 0700 $cloudreve_prefix
     update_cloudreve
     rm -rf /dev/shm/cloudreve
-    local temp
-    temp="$("$cloudreve_prefix/cloudreve" | grep "初始管理员密码：" | awk '{print $4}')"
+    local password
+    password="$("$cloudreve_prefix/cloudreve" | grep "password" | awk '{print $6}')"
     sleep 1s
     systemctl start cloudreve
     systemctl enable cloudreve
     tyblue "-------- 请打开\"https://${domain_list[$1]}\"进行Cloudreve初始化 -------"
     tyblue "  1. 登陆帐号"
     purple "    初始管理员账号：admin@cloudreve.org"
-    purple "    $temp"
+    purple "    初始管理员密码：$password"
     tyblue "  2. 右上角头像 -> 管理面板"
     tyblue "  3. 这时会弹出对话框 \"确定站点URL设置\" 选择 \"更改\""
     tyblue "  4. 左侧参数设置 -> 注册与登陆 -> 不允许新用户注册 -> 往下拉点击保存"
@@ -3318,7 +3353,7 @@ let_init_nextcloud()
 	yellow "安装完成后nextcloud管理员用户名/密码同数据库名和密码一致"
 	red    "内存小的机器输入n回车手动安装可以用SQLite数据库"
 	read -p "是否需要自动安装配置nextcloud? [Y/n]?" auto_config_nextcloud
-	case $auto_config_nextcloud in
+case $auto_config_nextcloud in
 	[yY][eE][sS] | [yY])
 	if [ ! "$(command -v mysql)" ]; then
 	install_mysql
@@ -3331,38 +3366,72 @@ let_init_nextcloud()
 	sleep 5s
 	add_nextcloud_config
 	echo
-	;;
-	*)
+;;
+*)
     yellow "请立即打开\"https://${domain_list[$1]}\"进行Nextcloud初始化设置："
     tyblue " 1.自定义管理员的用户名和密码"
     tyblue " 2.数据库类型选择SQLite"
     tyblue " 3.建议不勾选\"安装推荐的应用\"，因为进去之后还能再安装"
-	
     sleep 15s
-
     echo -e "\\n\\n"
-	red     "输入y自动配置apcu缓存，务必确定你已经打开\"https://${domain_list[$1]}\"安装完成nextcloud"
-    tyblue  "确定已安装好nextcloud，否则请输入n，按两次回车键以继续。。。"
-	read -p "是否给nextcloud配置apcu缓存+默认语言+默认语言 [Y/n]?" add_apcu
-	nextcloud_crontab
+		red     "输入y自动配置apcu缓存，务必确定你已经打开\"https://${domain_list[$1]}\"安装完成nextcloud"
+		tyblue  "确定已安装好nextcloud，否则请输入n，按两次回车键以继续。。。"
+		read -p "是否给nextcloud配置apcu缓存+默认语言+默认语言 [Y/n]?" add_apcu
+		nextcloud_crontab
     read -s
     read -s
-	case $add_apcu in
-	[yY][eE][sS] | [yY])
-	add_nextcloud_config
-	;;
-	*)
-	echo
-	;;
-	esac
-	echo
-	;;
-	esac
+        case $add_apcu in
+    		yY][eE][sS] | [yY])
+    		add_nextcloud_config
+    	;;
+    	*)
+    yellow "请尽快打开\"https://${domain_list[$1]}\"进行Nextcloud初始化设置："
+    tyblue " 1. 初始化管理员用户名和密码"
+    tyblue " 2. 数据库类型选择SQLite"
+    tyblue " 3. 不建议勾选\"安装推荐的应用\"，初始化完成后还能安装"
+    	;;
+    	esac
+    	echo
+    	;;
+    	esac
 }
 
 print_share_link()
 {
-    tyblue "分享链接："    
+    if [ $protocol_1 -ne 0 ]; then
+        local ip=""
+        while [ -z "$ip" ]
+        do
+            read -p "请输入您的服务器IP(用于生成分享链接)：" ip
+        done
+    fi
+    if [[ "$ip" =~ : ]] && ! [[ "$ip" =~ ^\[.*:.*\]$ ]]; then
+        ip="[$ip]"
+    fi
+    echo
+    tyblue "分享链接："
+    if [ $protocol_1 -eq 1 ] || [ $protocol_1 -eq 3 ]; then
+        green  "============ VLESS-TCP-XTLS\\033[35m(不走CDN)\\033[32m ============"
+        for i in "${!domain_list[@]}"
+        do
+            if [ "${pretend_list[$i]}" == "1" ] || [ "${pretend_list[$i]}" == "2" ]; then
+                tyblue "vless://${xid_1}@${ip}:10086?security=tls&sni=${domain_list[$i]}&alpn=http%2F1.1&flow=xtls-rprx-vision"
+            else
+                tyblue "vless://${xid_1}@${ip}:10086?security=tls&sni=${domain_list[$i]}&alpn=h2,http%2F1.1&flow=xtls-rprx-vision"
+            fi
+        done
+    fi
+    if [ $protocol_1 -eq 2 ] || [ $protocol_1 -eq 3 ]; then
+        green  "============ VLESS-TCP-TLS\\033[35m(不走CDN)\\033[32m ============"
+        for i in "${!domain_list[@]}"
+        do
+            if [ "${pretend_list[$i]}" == "1" ] || [ "${pretend_list[$i]}" == "2" ]; then
+                tyblue "vless://${xid_1}@${ip}:100863?security=tls&sni=${domain_list[$i]}&alpn=http%2F1.1"
+            else
+                tyblue "vless://${xid_1}@${ip}:10086?security=tls&sni=${domain_list[$i]}&alpn=h2,http%2F1.1"
+            fi
+        done
+    fi
     if [ $protocol_2 -eq 1 ]; then
         green  "=========== VLESS-gRPC-TLS \\033[35m(若域名开启了CDN解析则会连接CDN，否则将直连)\\033[32m ==========="
         for i in "${domain_list[@]}"
@@ -3394,25 +3463,35 @@ print_config_info()
 {
     echo -e "\\n\\n\\n"
     if [ $protocol_1 -ne 0 ]; then
-        tyblue "--------------------- VLESS-TCP-XTLS/TLS (不走CDN) ---------------------"
+        if [ $protocol_1 -eq 1 ]; then
+            tyblue "--------------------- VLESS-TCP-XTLS (不走CDN) ---------------------"
+        elif [ $protocol_1 -eq 2 ]; then
+            tyblue "--------------------- VLESS-TCP-TLS (不走CDN) ---------------------"
+        else
+            tyblue "--------------------- VLESS-TCP-XTLS/TLS (不走CDN) ---------------------"
+        fi
         tyblue " protocol(传输协议)    ：\\033[33mvless"
         purple "  (V2RayN选择\"添加[VLESS]服务器\";V2RayNG选择\"手动输入[VLESS]\")"
         tyblue " address(地址)         ：\\033[33m服务器ip"
         purple "  (Qv2ray:主机)"
         tyblue " port(端口)            ：\\033[33m443"
         tyblue " id(用户ID/UUID)       ：\\033[33m${xid_1}"
-        tyblue " flow(流控)            ："
-        tyblue "                         使用XTLS ："
-        tyblue "                                    Linux/安卓/路由器：\\033[33mxtls-rprx-splice\\033[32m(推荐)\\033[36m或\\033[33mxtls-rprx-direct"
-        tyblue "                                    其它             ：\\033[33mxtls-rprx-direct"
-        tyblue "                         使用TLS  ：\\033[33m空"
+        if [ $protocol_1 -eq 1 ]; then
+            tyblue " flow(流控)            ：\\033[33mxtls-rprx-vision"
+        elif [ $protocol_1 -eq 2 ]; then
+            tyblue " flow(流控)            ：\\033[33m空"
+        else
+            tyblue " flow(流控)            ："
+            tyblue "                         使用XTLS ：\\033[33mxtls-rprx-vision"
+            tyblue "                         使用TLS  ：\\033[33m空"
+        fi
         tyblue " encryption(加密)      ：\\033[33mnone"
         tyblue " ---Transport/StreamSettings(底层传输方式/流设置)---"
         tyblue "  network(传输方式)             ：\\033[33mtcp"
         purple "   (Shadowrocket传输方式选none)"
         tyblue "  type(伪装类型)                ：\\033[33mnone"
         purple "   (Qv2ray:协议设置-类型)"
-        tyblue "  security(传输层加密)          ：\\033[33mxtls\\033[36m或\\033[33mtls \\033[35m(此选项将决定是使用XTLS还是TLS)"
+        tyblue "  security(传输层加密)          ：\\033[33mtls"
         purple "   (V2RayN(G):底层传输安全;Qv2ray:TLS设置-安全类型)"
         if [ ${#domain_list[@]} -eq 1 ]; then
             tyblue "  serverName                    ：\\033[33m${domain_list[*]}"
@@ -3422,10 +3501,8 @@ print_config_info()
         purple "   (V2RayN(G):SNI;Qv2ray:TLS设置-服务器地址;Shadowrocket:Peer 名称)"
         tyblue "  allowInsecure                 ：\\033[33mfalse"
         purple "   (Qv2ray:TLS设置-允许不安全的证书(不打勾);Shadowrocket:允许不安全(关闭))"
-        tyblue "  fingerprint                   ："
-        tyblue "                                  使用XTLS ：\\033[33m空"
-        tyblue "                                  使用TLS  ：\\033[33m空\\033[36m/\\033[33mchrome\\033[32m(推荐)\\033[36m/\\033[33mfirefox\\033[36m/\\033[33msafari"
-        purple "                                           (此选项决定是否伪造浏览器指纹，空代表不伪造)"
+        tyblue "  fingerprint                   ：\\033[33m空\\033[36m/\\033[33mchrome\\033[32m(推荐)\\033[36m/\\033[33mfirefox\\033[36m/\\033[33mios\\033[36m/\\033[33msafari\\033[36m/\\033[33mandroid\\033[36m/\\033[33medge\\033[36m/\\033[33m360\\033[36m/\\033[33mqq\\033[36m/\\033[33mrandom"
+        purple "                                    (此选项决定是否伪造浏览器指纹：空代表不伪造，使用GO程序默认指纹；random代表随机选择一种浏览器伪造指纹)"
         tyblue "  alpn                          ："
         tyblue "                                  伪造浏览器指纹  ：此参数不生效，可随意设置"
         tyblue "                                  不伪造浏览器指纹：若serverName填的域名对应的伪装网站为网盘，建议设置为\\033[33mhttp/1.1\\033[36m；否则建议设置为\\033[33mh2,http/1.1 \\033[35m(此选项为空/未配置时，默认值为\"h2,http/1.1\")"
@@ -3528,18 +3605,15 @@ print_config_info()
         tyblue "------------------------------------------------------------------------"
     fi
     echo
+    yellow "注：部分选项可能分享链接无法涉及，如果不怕麻烦，建议手动填写"
     ask_if "是否生成分享链接？(y/n)" && print_share_link
     echo
     yellow " 关于fingerprint与alpn，详见：https://github.com/yspcn/Xray-script#关于tls握手tls指纹和alpn"
     echo
-    blue   " 若想实现Fullcone(NAT类型开放)，需要以下条件："
-    blue   "   1. 确保客户端核心为 Xray v1.3.0+"
-    blue   "   2. 若您正在使用Netch作为客户端，请不要使用模式 [1] 连接 (可使用模式 [3] Bypass LAN )"
-    blue   "   3. 如果测试系统为Windows，并且正在使用透明代理或TUN/Bypass LAN，请确保当前网络设置为专用网络"
+    blue   " 若要实现Fullcone(NAT类型开放)，需要以下条件："
+    blue   "   如果客户端系统为Windows，并且正在使用透明代理或TUN/Bypass LAN，请确保当前网络设置为专用网络"
     echo
-    blue   " 若想实现WebSocket 0-rtt，请将客户端核心升级至 Xray v1.4.0+"
-    echo
-    tyblue " 脚本最后更新时间：2022.10.31"
+    tyblue " 脚本最后更新时间：2023.1.1"
     echo
     red    " 此脚本仅供交流学习使用，请勿使用此脚本行违法之事。网络非法外之地，行非法之事，必将接受法律制裁!!!!"
     tyblue " 2020.11"
@@ -3559,7 +3633,7 @@ install_update_xray_tls_web()
     check_important_dependence_installed wget wget
     check_important_dependence_installed "procps" "procps-ng"
     install_epel
-#    ask_update_script
+    ask_update_script
     check_ssh_timeout
     uninstall_firewall
     doupdate
@@ -3648,7 +3722,7 @@ install_update_xray_tls_web()
     fi
 
     if [ $update -eq 0 ]; then
-        green "即将开始安装Web+Xray-TLS，可能需要10-20分钟。。。"
+        green "即将开始安装Web+TLS+Web，可能需要10-20分钟。。。"
         sleep 3s
     fi
 
@@ -3775,8 +3849,8 @@ install_check_update_update_php()
         tyblue "安装Nextcloud需要安装php"
         yellow "仅支持在以下版本系统下安装php："
         yellow " 1. Ubuntu 20.04+"
-        yellow " 2. Debian 10+"
-        yellow " 3. 其他以 Debian 10+ 为基的系统"
+        yellow " 2. Debian 11+"
+        yellow " 3. 其他以 Debian 11+ 为基的系统"
         yellow " 4. Red Hat Enterprise Linux 8+"
         yellow " 5. CentOS 8+"
         yellow " 6. Fedora 30+"
@@ -3905,7 +3979,7 @@ reinit_domain()
     ! ask_if "是否继续？(y/n)" && return 0
     get_config_info
     readDomain
-    if ([ "${pretend_list[-1]}" == "2" ] || [ "${pretend_list[-1]}" == "4" ] || [ "${pretend_list[-1]}" == "6" ]) && [ $php_is_installed -eq 0 ]; then
+    if [ "${pretend_list[-1]}" == "2" ] || [ "${pretend_list[-1]}" == "4" ] || [ "${pretend_list[-1]}" == "6" ] && [ $php_is_installed -eq 0 ]; then
         check_SELinux
         check_important_dependence_installed "procps" "procps-ng"
         install_epel
@@ -3986,7 +4060,7 @@ add_domain()
         tyblue "Nextcloud可以用于多个域名"
         return 1
     fi
-    if ([ "${pretend_list[-1]}" == "2" ] || [ "${pretend_list[-1]}" == "4" ] || [ "${pretend_list[-1]}" == "6" ]) && [ $php_is_installed -eq 0 ]; then
+    if [ "${pretend_list[-1]}" == "2" ] || [ "${pretend_list[-1]}" == "4" ] || [ "${pretend_list[-1]}" == "6" ] && [ $php_is_installed -eq 0 ]; then
         check_SELinux
         check_important_dependence_installed "procps" "procps-ng"
         install_epel
@@ -4113,7 +4187,7 @@ change_pretend()
         tyblue "Nextcloud可以用于多个域名"
         return 1
     fi
-    if ([ "$pretend" == "2" ] || [ "$pretend" == "2" ] || [ "$pretend" == "2" ]) && [ $php_is_installed -eq 0 ]; then
+    if [ "$pretend" == "2" ] || [ "$pretend" == "4" ] || [ "$pretend" == "6" ] && [ $php_is_installed -eq 0 ]; then
         check_SELinux
         check_important_dependence_installed "procps" "procps-ng"
         install_epel
@@ -4283,7 +4357,7 @@ change_xray_path()
 simplify_system()
 {
     if systemctl -q is-active xray || systemctl -q is-active nginx || systemctl -q is-active php-fpm; then
-        yellow "请先停止Web+Xray-TLS"
+        yellow "请先停止Web+TLS+Web"
         return 1
     fi
     [ "$dnf" == "yum" ] && check_important_dependence_installed "" "yum-utils"
@@ -4291,12 +4365,8 @@ simplify_system()
     get_system_info
     check_important_dependence_installed "procps" "procps-ng"
     yellow "警告："
-    tyblue " 1. 此功能可能导致某些VPS无法开机，请谨慎使用"
-    tyblue " 2. 如果VPS上部署了 Web+Xray-TLS 以外的东西，可能被误删"
-    ! ask_if "是否要继续?(y/n)" && return 0
-    echo
-    yellow "提示：在精简系统前请先设置apt/yum/dnf的软件源为http/ftp而非https/ftps"
-    purple "通常来说系统默认即是http/ftp"
+    tyblue " 1. 此功不能保证在所有系统运行成功 (特别是某些VPS定制系统)，如果运行失败，可能导致VPS无法开机"
+    tyblue " 2. 如果VPS上部署了 Web+TLS+Web 以外的东西，可能被误删"
     ! ask_if "是否要继续?(y/n)" && return 0
     echo
     local save_ssh=0
@@ -4329,31 +4399,55 @@ simplify_system()
             check_important_dependence_installed "" "$i"
         done
     else
-        local temp_backup=()
-        local temp_important=('apt-utils' 'whiptail' 'initramfs-tools' 'isc-dhcp-client' 'netplan.io' 'openssh-server' 'network-manager')
-        for i in "${temp_important[@]}"
+        local debian_remove_packages=('^cron$' '^anacron$' '^cups' '^foomatic' '^openssl$' '^snapd$' '^kdump-tools$' '^flex$' '^make$' '^automake$' '^cloud-init' '^pkg-config$' '^gcc-[1-9][0-9]*$' '^cpp-[1-9][0-9]*$' '^curl$' '^python' '^libpython' '^dbus$' '^at$' '^open-iscsi$' '^rsyslog$' '^acpid$' '^libnetplan0$' '^glib-networking-common$' '^bcache-tools$' '^bind([0-9]|-|$)' '^lshw$' '^thermald' '^libdbus' '^libevdev' '^libupower' '^readline-common$' '^libreadline' '^xz-utils$' '^selinux-utils$' '^wget$' '^zip$' '^unzip$' '^bzip2$' '^finalrd$' '^cryptsetup' '^libplymouth' '^lib.*-dev$' '^perl$' '^perl-modules' '^x11' '^libx11' '^qemu' '^xdg-' '^libglib' '^libicu' '^libxml' '^liburing' '^libisc' '^libdns' '^isc-' '^net-tools$' '^xxd$' '^xkb-data$' '^lsof$' '^task' '^usb' '^libusb' '^doc' '^libwrap' '^libtext' '^libmagic' '^libpci' '^liblocale' '^keyboard' '^libuni[^s]' '^libpipe' '^man-db$' '^manpages' '^liblock' '^liblog' '^libxapian' '^libpsl' '^libpap' '^libgs[0-9]' '^libpaper' '^postfix' '^nginx' '^libnginx' '^libpop' '^libslang' '^apt-utils$' '^google')
+        local debian_keep_packages=('apt-utils' 'whiptail' 'initramfs-tools' 'isc-dhcp-client' 'netplan.io' 'openssh-server' 'network-manager' 'ifupdown' 'ifupdown-ng' 'ca-certificates')
+        local remove_packages=()
+        local keep_packages=()
+        for i in "${debian_keep_packages[@]}"
         do
-            LANG="en_US.UTF-8" LANGUAGE="en_US:en" dpkg -s "$i" 2>/dev/null | grep -qi 'status[ '$'\t]*:[ '$'\t]*install[ '$'\t]*ok[ '$'\t]*installed[ '$'\t]*$' && temp_backup+=("$i")
+            LANG="en_US.UTF-8" LANGUAGE="en_US:en" dpkg -s "$i" 2>/dev/null | grep -qi 'status[ '$'\t]*:[ '$'\t]*install[ '$'\t]*ok[ '$'\t]*installed[ '$'\t]*$' && keep_packages+=("$i")
         done
-        temp_backup+=($(dpkg --list 'grub*' | grep '^[ '$'\t]*ii[ '$'\t]' | awk '{print $2}'))
-        local temp_remove_list=('cron' 'anacron' '^cups' '^foomatic' 'openssl' 'snapd' 'kdump-tools' 'flex' 'make' 'automake' '^cloud-init' 'pkg-config' '^gcc-[1-9][0-9]*$' '^cpp-[1-9][0-9]*$' 'curl' '^python' '^libpython' 'dbus' 'at' 'open-iscsi' 'rsyslog' 'acpid' 'libnetplan0' 'glib-networking-common' 'bcache-tools' '^bind([0-9]|-|$)' 'lshw' '^thermald' '^libdbus' '^libevdev' '^libupower' 'readline-common' '^libreadline' 'xz-utils' 'selinux-utils' 'wget' 'zip' 'unzip' 'bzip2' 'finalrd' '^cryptsetup' '^libplymouth' '^lib.*-dev$' 'perl' '^perl-modules' '^x11' '^libx11' '^qemu' '^xdg-' '^libglib' '^libicu' '^libxml' '^liburing' '^libisc' '^libdns' '^isc-' 'net-tools' 'xxd' 'xkb-data' 'lsof' '^task' '^usb' '^libusb' '^doc' '^libwrap' '^libtext' '^libmagic' '^libpci' '^liblocale' '^keyboard' '^libuni[^s]' '^libpipe' 'man-db' '^manpages' '^liblock' '^liblog' '^libxapian' '^libpsl' '^libpap' '^libgs[0-9]' '^libpaper' '^postfix' '^nginx' '^libnginx')
+        keep_packages+=($(dpkg --list 'grub*' | grep '^[ '$'\t]*ii[ '$'\t]' | awk '{print $2}'))
+        dpkg -l | grep '^[ '$'\t]*ii[ '$'\t]' | awk '{print $2}' | cut -d : -f 1 > temp
+        for package in "${debian_remove_packages[@]}"
+        do
+            if grep -q "$package" temp; then
+                tyblue "将删除软件包：$package"
+                remove_packages+=("$package")
+            fi
+        done
+        cp /etc/apt/sources.list sources.list.bak
+        sed -i 's#https://#http://#g' /etc/apt/sources.list
         #'^libp11' '^libtasn' '^libkey' '^libnet'
-        if ! apt_auto_remove_purge "${temp_remove_list[@]}"; then
-            $apt_no_install_recommends -y -f install
-            apt_auto_remove_purge cron anacron || $apt_no_install_recommends -y -f install
-            apt_auto_remove_purge '^cups' '^foomatic' || $apt_no_install_recommends -y -f install
-            for i in "${temp_remove_list[@]}"
-            do
-                apt_auto_remove_purge "$i" || $apt_no_install_recommends -y -f install
-            done
+        if ! apt_auto_remove_purge "${remove_packages[@]}"; then
+            $apt update
+            $apt -y -f --no-install-recommends install
+            if ! apt_auto_remove_purge "${remove_packages[@]}"; then
+                red    "精简系统时有错误发生（某些软件包卸载失败）"
+                echo
+                tyblue "如果您是小白，建议选择n终止卸载，如果后续仍有出现错误，请重装系统"
+                echo
+                tyblue "否则，可以按照以下步骤尝试修复："
+                tyblue " 1. 阅读错误信息，找到导致卸载错误的软件包；手动运行这条命令可能可以帮助寻找错误包： $apt -f --no-install-recommends install (在终端中运行，参考2)"
+                tyblue " 2. 按ctrl+z将脚本挂在后台，也可尝试新建一个终端(不一定能新建成功)"
+                tyblue " 3. 如果能看出导致卸载错误的原因并解决是最好；如果不能，运行 '$apt update && $apt --no-install-recommends install 软件包名' 手动升级该软件包"
+                tyblue " 4. 运行fg命令返回脚本(对应ctrl+z命令)"
+                tyblue " 5. 在完成上述步骤后，选择y继续卸载"
+                echo
+                if ask_if "继续卸载?(y/n)"; then
+                    if ! apt_auto_remove_purge "${remove_packages[@]}"; then
+                        red "卸载失败！"
+                        tyblue "按回车键继续，如果后续仍有出现错误，请重装系统"
+                        read -s
+                    fi
+                fi
+            fi
         fi
-        apt_auto_remove_purge '^libpop' || $apt_no_install_recommends -y -f install
-        apt_auto_remove_purge '^libslang' || $apt_no_install_recommends -y -f install
-        apt_auto_remove_purge apt-utils || $apt_no_install_recommends -y -f install
-        for i in "${temp_backup[@]}"
+        for i in "${keep_packages[@]}"
         do
             check_important_dependence_installed "$i" ""
         done
+        mv sources.list.bak /etc/apt/sources.list
     fi
     ([ $nginx_is_installed -eq 1 ] || [ $php_is_installed -eq 1 ] || [ $is_installed -eq 1 ]) && install_epel
     [ $nginx_is_installed -eq 1 ] && install_nginx_dependence
@@ -4412,7 +4506,7 @@ start_menu()
     local cloudreve_status
     [ $cloudreve_is_installed -eq 1 ] && cloudreve_status="\\033[32m已安装" || cloudreve_status="\\033[31m未安装"
     systemctl -q is-active cloudreve && cloudreve_status+="                \\033[32m运行中" || cloudreve_status+="                \\033[31m未运行"
-    tyblue "------------------------ Web+Xray-TLS 搭建/管理脚本 ------------------------"
+    tyblue "------------------------ Web+TLS+Web 搭建/管理脚本 ------------------------"
     echo
     tyblue "           Xray   ：           ${xray_status}"
     echo
@@ -4434,12 +4528,12 @@ start_menu()
     echo
     tyblue " -----------安装/更新/卸载-----------"
     if [ $is_installed -eq 0 ]; then
-        green  "   1. 安装Web+Xray-TLS"
+        green  "   1. 安装Web+TLS+Web"
     else
-        green  "   1. 重新安装Web+Xray-TLS"
+        green  "   1. 重新安装Web+TLS+Web"
     fi
     purple "         流程：[更新系统组件]->[安装bbr]->[安装php]->安装Nginx->安装Xray->申请证书->配置文件->[安装/配置Cloudreve]"
-    green  "   2. 更新Web+Xray-TLS"
+    green  "   2. 更新Web+TLS+Web"
     purple "         流程：更新脚本->[更新系统组件]->[更新bbr]->[更新php]->[更新Nginx]->更新Xray->更新证书->更新配置文件->[更新Cloudreve]"
     tyblue "   3. 检查更新/更新脚本"
     tyblue "   4. 更新系统组件"
@@ -4449,13 +4543,13 @@ start_menu()
     tyblue "   7. 检查更新/更新Nginx"
     tyblue "   8. 更新Cloudreve"
     tyblue "   9. 更新Xray"
-    red    "  10. 卸载Web+Xray-TLS"
+    red    "  10. 卸载Web+TLS+Web"
     red    "  11. 卸载php"
     red    "  12. 卸载Cloudreve"
     echo
     tyblue " --------------启动/停止-------------"
-    tyblue "  13. 启动/重启Web+Xray-TLS"
-    tyblue "  14. 停止Web+Xray-TLS"
+    tyblue "  13. 启动/重启Web+TLS+Web"
+    tyblue "  14. 停止Web+TLS+Web"
     echo
     tyblue " ----------------管理----------------"
     tyblue "  15. 查看配置信息"
@@ -4473,7 +4567,7 @@ start_menu()
     echo
     tyblue " ----------------其它----------------"
     tyblue "  25. 精简系统"
-    purple "         删除不必要的系统组件，即使已经安装 Web+Xray-TLS 仍然可以使用此功能"
+    purple "         删除不必要的系统组件，即使已经安装 Web+TLS+Web 仍然可以使用此功能"
     tyblue "  26. 尝试修复退格键无法使用的问题"
     purple "         部分ssh工具(如Xshell)可能有这类问题"
     tyblue "  27. 修改dns"
@@ -4486,11 +4580,11 @@ start_menu()
         read -p "您的选择是：" choice
     done
     if (( choice==2 || (7<=choice&&choice<=9) || choice==13 || (15<=choice&&choice<=24) )) && [ $is_installed -eq 0 ]; then
-        red "请先安装Web+Xray-TLS！！"
+        red "请先安装Web+TLS+Web！！"
         return 1
     fi
     if (( 17<=choice&&choice<=20 )) && ! (systemctl -q is-active nginx && systemctl -q is-active xray); then
-        red "请先启动Web+Xray-TLS！！"
+        red "请先启动Web+TLS+Web！！"
         return 1
     fi
     if [ $choice -eq 1 ]; then
